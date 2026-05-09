@@ -1,0 +1,147 @@
+.playground-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-end;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.eyebrow {
+    margin: 0 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.status-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-strip span,
+.button-row button,
+.segmented-control button {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text-strong);
+    font: inherit;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    min-height: 0;
+    flex: 1;
+}
+
+.sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.panel {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel h2,
+.editor-stage-header h2 {
+    margin: 0 0 14px;
+    font-size: 16px;
+}
+
+.button-row,
+.segmented-control {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.button-row button,
+.segmented-control button {
+    cursor: pointer;
+}
+
+.button-row button:hover,
+.segmented-control button:hover,
+.segmented-control button.active {
+    border-color: var(--accent-border);
+    background: var(--accent-soft);
+}
+
+.panel pre {
+    margin: 14px 0 0;
+    padding: 14px;
+    min-height: 360px;
+    max-height: calc(100vh - 280px);
+    overflow: auto;
+    border-radius: 8px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    color: var(--text-strong);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.editor-stage {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.editor-stage-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.editor-stage-header span {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.editor-canvas {
+    padding: 24px;
+    flex: 1;
+    overflow: auto;
+}
+
+.editor-canvas [data-nameless-editor='true'] {
+    min-height: 100%;
+}
+
+@media (max-width: 960px) {
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel pre {
+        max-height: 280px;
+    }
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Package documentation
+    url: https://github.com/namelesserlx/namelessler-editor/tree/main/packages/editor#readme
+    about: Read the package README and detailed docs before opening a question issue.
+  - name: Root repository README
+    url: https://github.com/namelesserlx/namelessler-editor#readme
+    about: Check repository-level usage, docs, and contribution information.

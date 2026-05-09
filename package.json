@@ -1,0 +1,85 @@
+{
+  "name": "namelessler-editor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "React Rich Text Editor for Tiptap. A batteries-included, JSON-first editor SDK for React with built-in UI, readonly rendering, and HTML/Markdown import-export.",
+  "keywords": [
+    "tiptap",
+    "tiptap-react",
+    "react",
+    "react-rich-text-editor",
+    "rich-text-editor",
+    "wysiwyg",
+    "content-editor",
+    "json-first",
+    "editor-sdk",
+    "headless-editor",
+    "react-editor",
+    "markdown",
+    "html",
+    "json",
+    "markdown-editor",
+    "cms-editor"
+  ],
+  "author": {
+    "name": "namelesserlx",
+    "email": "mwu9558@gmail.com",
+    "url": "https://github.com/namelesserlx"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/namelesserlx/namelessler-editor.git"
+  },
+  "homepage": "https://github.com/namelesserlx/namelessler-editor#readme",
+  "bugs": {
+    "url": "https://github.com/namelesserlx/namelessler-editor/issues"
+  },
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:editor": "pnpm --filter @namelesserlx/editor build",
+    "dev": "pnpm run dev:all",
+    "dev:all": "pnpm --filter @namelesserlx/editor build && pnpm -r --parallel --stream --filter @namelesserlx/editor --filter @namelesserlx/editor-playground run dev",
+    "dev:editor": "pnpm --filter @namelesserlx/editor dev",
+    "dev:playground": "pnpm --filter @namelesserlx/editor build && pnpm --filter @namelesserlx/editor-playground dev",
+    "preview:playground": "pnpm --filter @namelesserlx/editor-playground preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm --filter @namelesserlx/editor test",
+    "test:editor": "pnpm --filter @namelesserlx/editor test",
+    "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "prepare": "husky",
+    "clean": "rm -rf node_modules apps/playground/dist packages/editor/dist"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,mts,cts,tsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{css,html,json,md,yml,yaml}": "prettier --write"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.0",
+    "@commitlint/config-conventional": "^21.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.3",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.58.2"
+  }
+}
