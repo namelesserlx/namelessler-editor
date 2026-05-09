@@ -1,53 +1,9 @@
 import { useState } from 'react';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { Highlighter, Palette, X } from 'lucide-react';
-import { BG_PALETTE, type PaletteColor, TEXT_PALETTE } from '../core/palette';
 import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../i18n';
 import { MenuButton } from './MenuButton';
-
-interface ColorOption {
-    key: 'clear' | PaletteColor['key'];
-    value: string | null;
-}
-
-function toColorOptions(palette: PaletteColor[]): ColorOption[] {
-    return [
-        { key: 'clear', value: null },
-        ...palette.map((c) => ({ key: c.key, value: c.cssVar })),
-    ];
-}
-
-const TEXT_COLORS: ColorOption[] = toColorOptions(TEXT_PALETTE);
-const BACKGROUND_COLORS: ColorOption[] = toColorOptions(BG_PALETTE);
-
-const COLOR_LABELS: Record<EditorLocale, Record<ColorOption['key'], string>> = {
-    'en-US': {
-        clear: 'Clear',
-        default: 'Default',
-        slate: 'Slate',
-        red: 'Red',
-        orange: 'Orange',
-        amber: 'Amber',
-        green: 'Green',
-        cyan: 'Cyan',
-        blue: 'Blue',
-        violet: 'Violet',
-        pink: 'Pink',
-    },
-    'zh-CN': {
-        clear: '清除',
-        default: '默认',
-        slate: '石板黑',
-        red: '红色',
-        orange: '橙色',
-        amber: '琥珀色',
-        green: '绿色',
-        cyan: '青色',
-        blue: '蓝色',
-        violet: '紫色',
-        pink: '粉色',
-    },
-};
+import { BACKGROUND_COLORS, TEXT_COLORS, getColorLabels } from './colorPalette';
 
 export interface ColorPickerProps {
     editor: TiptapEditor;
@@ -73,7 +29,7 @@ export function ColorPicker({
         ? (editor.getAttributes('textStyle').color as string | undefined)
         : (editor.getAttributes('highlight').color as string | undefined);
     const label = isTextMode ? messages.toolbar.textColor : messages.toolbar.backgroundColor;
-    const colorLabels = COLOR_LABELS[locale] ?? COLOR_LABELS[DEFAULT_EDITOR_LOCALE];
+    const colorLabels = getColorLabels(locale);
 
     const setOpen = (nextOpen: boolean) => {
         if (controlledOpen === undefined) {

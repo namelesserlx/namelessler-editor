@@ -73,7 +73,7 @@ function App() {
     const controller = useEditorController({
         defaultContent: sampleJson,
         contentFormat: 'json',
-        locale: 'en-US',
+        locale: 'zh-CN',
     });
 
     const previewValue = !controller.isReady

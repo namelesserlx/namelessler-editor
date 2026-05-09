@@ -41,6 +41,7 @@ export function LinkPopover({
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const open = controlledOpen ?? uncontrolledOpen;
     const [href, setHref] = useState('');
+    const [hasExistingLink, setHasExistingLink] = useState(false);
     const openedSelectionKeyRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
@@ -54,6 +55,7 @@ export function LinkPopover({
             }
             onOpenChange?.(false);
             setHref('');
+            setHasExistingLink(false);
             openedSelectionKeyRef.current = undefined;
         }
     }, [controlledOpen, onOpenChange, open, selectionKey]);
@@ -64,12 +66,15 @@ export function LinkPopover({
         }
         onOpenChange?.(false);
         setHref('');
+        setHasExistingLink(false);
         openedSelectionKeyRef.current = undefined;
     };
 
     const openPopover = () => {
+        const currentHref = (editor.getAttributes('link').href as string | undefined) ?? '';
         openedSelectionKeyRef.current = selectionKey;
-        setHref((editor.getAttributes('link').href as string | undefined) ?? '');
+        setHref(currentHref);
+        setHasExistingLink(Boolean(currentHref));
         if (controlledOpen === undefined) {
             setUncontrolledOpen(true);
         }
@@ -131,26 +136,49 @@ export function LinkPopover({
                             }
                         }}
                     />
-                    <button
-                        type="button"
-                        className="nlx-editor-popover-action"
-                        data-nameless-editor-link-save="true"
-                        onClick={applyLink}
-                    >
-                        {messages.linkPopover.save}
-                    </button>
-                    <button
-                        type="button"
-                        className="nlx-editor-popover-action"
-                        aria-label={messages.toolbar.unlink}
-                        title={messages.toolbar.unlink}
-                        onClick={() => {
-                            editor.chain().focus().extendMarkRange('link').unsetLink().run();
-                            closePopover();
-                        }}
-                    >
-                        <Unlink size={14} aria-hidden="true" />
-                    </button>
+                    <span className="nlx-editor-link-popover-actions">
+                        <button
+                            type="button"
+                            className="nlx-editor-popover-action"
+                            data-nameless-editor-link-save="true"
+                            data-nameless-editor-link-confirm="true"
+                            onClick={applyLink}
+                        >
+                            {messages.linkPopover.save}
+                        </button>
+                        {hasExistingLink ? (
+                            <button
+                                type="button"
+                                className="nlx-editor-popover-action nlx-editor-popover-action-icon"
+                                aria-label={messages.toolbar.unlink}
+                                title={messages.toolbar.unlink}
+                                data-nameless-editor-link-remove="true"
+                                onClick={() => {
+                                    editor
+                                        .chain()
+                                        .focus()
+                                        .extendMarkRange('link')
+                                        .unsetLink()
+                                        .run();
+                                    closePopover();
+                                }}
+                            >
+                                <Unlink size={14} aria-hidden="true" />
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                className="nlx-editor-popover-action nlx-editor-popover-action-secondary"
+                                data-nameless-editor-link-cancel="true"
+                                onClick={() => {
+                                    closePopover();
+                                    editor.chain().focus().run();
+                                }}
+                            >
+                                {messages.linkPopover.cancel}
+                            </button>
+                        )}
+                    </span>
                 </span>
             ) : null}
         </span>

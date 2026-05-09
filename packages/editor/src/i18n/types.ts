@@ -22,6 +22,7 @@ export interface EditorMessages {
         paragraph: string;
         textColor: string;
         backgroundColor: string;
+        colors: string;
         alignLeft: string;
         alignCenter: string;
         alignRight: string;
@@ -40,6 +41,7 @@ export interface EditorMessages {
         urlPlaceholder: string;
         textPlaceholder: string;
         save: string;
+        cancel: string;
         remove: string;
         open: string;
     };

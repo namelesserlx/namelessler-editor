@@ -101,4 +101,43 @@ describe('LinkPopover', () => {
         expect(chainApi.unsetLink).toHaveBeenCalledTimes(1);
         expect(container.querySelector('[data-nameless-editor-link-popover="true"]')).toBeNull();
     });
+
+    it('renders localized empty-state actions for a new link', () => {
+        const { editor } = createEditorMock();
+
+        act(() => {
+            root.render(<LinkPopover editor={editor as never} locale="zh-CN" selectionKey="1:8" />);
+        });
+
+        act(() => {
+            container.querySelector<HTMLButtonElement>('[aria-label="链接"]')?.click();
+        });
+
+        expect(
+            container.querySelector<HTMLInputElement>('[data-nameless-editor-link-input="true"]')
+                ?.placeholder,
+        ).toBe('输入链接地址...');
+        expect(
+            container.querySelector('[data-nameless-editor-link-confirm="true"]')?.textContent,
+        ).toBe('确定');
+        expect(
+            container.querySelector('[data-nameless-editor-link-cancel="true"]')?.textContent,
+        ).toBe('取消');
+        expect(container.querySelector('[data-nameless-editor-link-remove="true"]')).toBeNull();
+    });
+
+    it('shows the unlink action when editing an existing link', () => {
+        const { editor } = createEditorMock('https://example.com/article');
+
+        act(() => {
+            root.render(<LinkPopover editor={editor as never} locale="en-US" selectionKey="1:8" />);
+        });
+
+        act(() => {
+            container.querySelector<HTMLButtonElement>('[aria-label="Link"]')?.click();
+        });
+
+        expect(container.querySelector('[data-nameless-editor-link-remove="true"]')).not.toBeNull();
+        expect(container.querySelector('[data-nameless-editor-link-cancel="true"]')).toBeNull();
+    });
 });

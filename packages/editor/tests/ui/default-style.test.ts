@@ -37,6 +37,33 @@ describe('default editor styles', () => {
         expect(styles).toContain('transform: translateY(-1px);');
     });
 
+    it('includes compact bubble menu trigger and combined palette styles', () => {
+        expect(styles).toContain('.nlx-editor-bubble-menu-select-trigger');
+        expect(styles).toContain('.nlx-editor-bubble-color-popover');
+        expect(styles).toContain('.nlx-editor-bubble-color-section');
+        expect(styles).toContain('[data-nameless-editor-bubble-color-picker-trigger=');
+        expect(styles).toContain('.nlx-editor-bubble-link-panel');
+    });
+
+    it('keeps popover surfaces white with compact typography and fixed active colors', () => {
+        expect(styles).toContain(
+            '.nlx-editor-bubble-menu-select-popover .nlx-editor-button-active',
+        );
+        expect(styles).toContain('background: var(--nlx-color-primary-soft);');
+        expect(styles).toContain('color: var(--nlx-color-primary);');
+        expect(styles).toContain('.nlx-editor-bubble-color-popover');
+        expect(styles).toContain('.nlx-editor-bubble-link-panel');
+        expect(styles).toContain('font-size: 13px;');
+    });
+
+    it('matches swatch hover feedback to the bubble menu button hover language', () => {
+        const swatchHoverRule =
+            styles.match(/\.nlx-editor-color-swatch:hover\s*{[^}]*}/)?.[0] ?? '';
+
+        expect(swatchHoverRule).toContain('box-shadow: 0 3px 10px rgb(15 23 42 / 14%);');
+        expect(swatchHoverRule).toContain('transform: translateY(-1px);');
+    });
+
     it('styles GFM content nodes consistently with the default UI', () => {
         expect(styles).toContain("[data-nameless-editor-content='true'] table");
         expect(styles).toContain("[data-nameless-editor-readonly='true'] table");
