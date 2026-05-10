@@ -1,6 +1,7 @@
 export {
     createEditorExtensions,
     createEmptyEditorContent,
+    createLowlight,
     createLowlightRegistry,
     createEmptyDocument,
     createNormalizeOptions,

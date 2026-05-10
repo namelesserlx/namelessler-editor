@@ -17,8 +17,8 @@ import {
     Strikethrough,
     Underline,
 } from 'lucide-react';
-import type { CSSProperties } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { EditorFeatureFlags } from '../core/createEditorExtensions';
 import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../i18n';
 import { sanitizeUrl } from '../security/urlPolicy';
@@ -36,6 +36,11 @@ export interface DefaultBubbleMenuProps {
     colorPicker?: boolean;
     zIndex?: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
+    customSections?: Array<{
+        key: string;
+        placement: 'start' | 'end';
+        render: (editor: TiptapEditor) => ReactNode;
+    }>;
 }
 
 function enabled(features: Partial<EditorFeatureFlags> | undefined, key: keyof EditorFeatureFlags) {
@@ -89,6 +94,7 @@ export function DefaultBubbleMenu({
     colorPicker = true,
     zIndex,
     shouldShow,
+    customSections,
 }: DefaultBubbleMenuProps) {
     useEditorSnapshot(editor, { update: false });
     const messages = resolveEditorMessages(locale);
@@ -186,6 +192,8 @@ export function DefaultBubbleMenu({
               : messages.toolbar.alignLeft;
 
     const menuStyle = zIndex === undefined ? undefined : ({ zIndex } satisfies CSSProperties);
+    const startSections = customSections?.filter((s) => s.placement === 'start') ?? [];
+    const endSections = customSections?.filter((s) => s.placement === 'end') ?? [];
 
     return (
         <BubbleMenu
@@ -232,6 +240,11 @@ export function DefaultBubbleMenu({
             }}
         >
             <div className="nlx-editor-bubble-menu-content">
+                {startSections.map((section) => (
+                    <span key={section.key} className="nlx-editor-menu-section">
+                        {section.render(editor)}
+                    </span>
+                ))}
                 <span className="nlx-editor-menu-section">
                     <BubbleMenuSelect
                         ariaLabel={currentBlockLabel}
@@ -463,6 +476,14 @@ export function DefaultBubbleMenu({
                         </span>
                     </>
                 ) : null}
+                {endSections.map((section) => (
+                    <React.Fragment key={section.key}>
+                        <span className="nlx-editor-menu-divider" aria-hidden="true" />
+                        <span className="nlx-editor-menu-section">
+                            {section.render(editor)}
+                        </span>
+                    </React.Fragment>
+                ))}
             </div>
             {activePopover === 'link' ? (
                 <div

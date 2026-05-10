@@ -1,34 +1,48 @@
 {
-  "name": "@namelesserlx/editor-playground",
-  "private": true,
-  "version": "0.0.0",
-  "description": "Example app for @namelesserlx/editor that mirrors how real users consume the package through npm-style entry points.",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "typecheck": "tsc -b",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@namelesserlx/editor": "workspace:*",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "esbuild": "^0.28.0",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.5.0",
-    "typescript": "~6.0.3",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.11"
-  }
+    "name": "@namelesserlx/editor-playground",
+    "private": true,
+    "version": "0.0.0",
+    "description": "AI Notepad - Rich text editor powered by @namelesserlx/editor with Gemini AI",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc -b"
+    },
+    "dependencies": {
+        "@base-ui/react": "^1.4.1",
+        "@fontsource-variable/geist": "^5.2.8",
+        "@google/genai": "^1.29.0",
+        "@namelesserlx/editor": "workspace:*",
+        "@radix-ui/react-visually-hidden": "^1.2.4",
+        "@tiptap-codeless/core": "^0.1.0",
+        "@tiptap-codeless/extension-code-block-pro": "^0.1.0",
+        "@tiptap-codeless/extension-drag-handle": "^0.1.0",
+        "@tiptap-codeless/extension-file-upload": "^0.1.0",
+        "@tiptap/core": "^3.22.5",
+        "@tiptap/extension-placeholder": "^3.22.5",
+        "@tiptap/pm": "^3.22.5",
+        "@tiptap/react": "^3.22.5",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "highlight.js": "^11.11.1",
+        "lowlight": "^3.3.0",
+        "lucide-react": "^0.546.0",
+        "mermaid": "^11.14.0",
+        "react": "^19.2.6",
+        "react-dom": "^19.2.6",
+        "tailwind-merge": "^3.5.0",
+        "tw-animate-css": "^1.4.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/typography": "^0.5.19",
+        "@tailwindcss/vite": "^4.1.14",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.1",
+        "tailwindcss": "^4.1.14",
+        "typescript": "~6.0.3",
+        "vite": "^8.0.11"
+    }
 }

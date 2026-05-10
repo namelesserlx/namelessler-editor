@@ -26,7 +26,7 @@ export type {
     EditorAttributeSanitizers,
 } from './documentModel';
 export { deepMerge } from './deepMerge';
-export { createLowlightRegistry } from './highlight';
+export { createLowlightRegistry, createLowlight } from './highlight';
 export { IframeEmbed } from './iframe';
 export {
     BG_HEX_TO_CSS_VAR,

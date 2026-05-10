@@ -42,6 +42,7 @@ export function DefaultEditorUi({
                     locale={locale}
                     linkPopover={resolvedUi.linkPopover}
                     colorPicker={resolvedUi.colorPicker}
+                    customSections={resolvedUi.bubbleMenu.customSections}
                 />
             ) : null}
             {resolvedUi.bubbleMenu && canRenderFloatingMenus ? (

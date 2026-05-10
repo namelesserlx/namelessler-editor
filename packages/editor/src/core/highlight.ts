@@ -1,4 +1,6 @@
-import { createLowlight, type LanguageFn } from 'lowlight';
+import { createLowlight as createLowlightImport, type LanguageFn } from 'lowlight';
+
+export const createLowlight = createLowlightImport;
 
 export interface EditorHighlightLanguage {
     name: string;

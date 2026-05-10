@@ -18,6 +18,11 @@ export interface EditorBubbleMenuOptions {
     enabled?: boolean;
     zIndex?: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
+    customSections?: Array<{
+        key: string;
+        placement: 'start' | 'end';
+        render: (editor: TiptapEditor) => React.ReactNode;
+    }>;
 }
 
 export type EditorBubbleMenuConfig = boolean | EditorBubbleMenuOptions;
@@ -35,6 +40,11 @@ export interface ResolvedEditorBubbleMenuOptions {
     enabled: boolean;
     zIndex: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
+    customSections?: Array<{
+        key: string;
+        placement: 'start' | 'end';
+        render: (editor: TiptapEditor) => React.ReactNode;
+    }>;
 }
 
 export interface ResolvedEditorUiOptions {
@@ -74,6 +84,7 @@ function resolveBubbleMenuOptions(
         enabled: bubbleMenu.enabled ?? DEFAULT_EDITOR_BUBBLE_MENU.enabled,
         zIndex: bubbleMenu.zIndex ?? DEFAULT_EDITOR_BUBBLE_MENU.zIndex,
         shouldShow: bubbleMenu.shouldShow,
+        customSections: bubbleMenu.customSections,
     };
 }
 

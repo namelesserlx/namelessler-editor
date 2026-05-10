@@ -10,6 +10,8 @@ export { DefaultToolbar } from './DefaultToolbar';
 export type { DefaultToolbarProps } from './DefaultToolbar';
 export { LinkPopover } from './LinkPopover';
 export type { LinkPopoverProps } from './LinkPopover';
+export { BubbleMenuSelect } from './BubbleMenuSelect';
+export type { BubbleMenuSelectOption, BubbleMenuSelectProps } from './BubbleMenuSelect';
 export { MenuButton } from './MenuButton';
 export type { MenuButtonProps } from './MenuButton';
 export { TableBubbleMenu } from './TableBubbleMenu';
