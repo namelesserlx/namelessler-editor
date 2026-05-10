@@ -63,9 +63,7 @@
   "scripts": {
     "build": "pnpm run build:js && pnpm run build:types",
     "build:js": "vite build",
-    "build:js:watch": "vite build --watch",
     "build:types": "tsc -p tsconfig.build.json",
-    "build:types:watch": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:performance": "vitest run tests/performance",
@@ -90,7 +88,7 @@
   ],
   "author": {
     "name": "namelesserlx",
-    "email": "namelesslx@foxmail.com",
+    "email": "mwu9558@gmail.com",
     "url": "https://github.com/namelesserlx"
   },
   "license": "MIT",
