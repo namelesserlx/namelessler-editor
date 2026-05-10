@@ -1,0 +1,317 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "namelessler editor playground"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "This playground showcases "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "@namelesserlx/editor"
+        },
+        {
+          "type": "text",
+          "text": " with custom extensions:"
+        }
+      ]
+    },
+    {
+      "type": "bulletList",
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "CodeBlock Pro"
+                },
+                {
+                  "type": "text",
+                  "text": " — Syntax-highlighted code blocks with Mermaid diagrams, fullscreen, folding, line numbers, and language switching"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "Drag Handle"
+                },
+                {
+                  "type": "text",
+                  "text": " — Block drag handle and slash-triggered insert menu (/)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "File Upload"
+                },
+                {
+                  "type": "text",
+                  "text": " — Drag & drop or paste files directly into the editor"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "AI Copilot"
+                },
+                {
+                  "type": "text",
+                  "text": " — Tab-triggered autocompletion and selection-based AI actions"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Try typing "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "code"
+            }
+          ],
+          "text": "/"
+        },
+        {
+          "type": "text",
+          "text": " to trigger the slash menu, or drag blocks using the handle on the left."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "JavaScript Example"
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "javascript",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "function fibonacci(n) {\n  const fib = [0, 1];\n  for (let i = 2; i <= n; i++) {\n    fib[i] = fib[i - 1] + fib[i - 2];\n  }\n  return fib.slice(0, n + 1);\n}\n\nconsole.log(fibonacci(10));\n// → [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55]"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Python Example"
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "python",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "def merge_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    mid = len(arr) // 2\n    left = merge_sort(arr[:mid])\n    right = merge_sort(arr[mid:])\n    return merge(left, right)\n\ndef merge(left, right):\n    result = []\n    i = j = 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            result.append(left[i])\n            i += 1\n        else:\n            result.append(right[j])\n            j += 1\n    return result + left[i:] + right[j:]"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Mermaid Diagram"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "The code block below renders a flowchart using Mermaid (if supported by CodeBlock Pro):"
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "mermaid",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "graph TD\n    A[Start] --> B{Is it working?}\n    B -->|Yes| C[Great!]\n    B -->|No| D[Debug]\n    D --> B\n    C --> E[Deploy]\n    E --> F[Monitor]\n    F --> G{All good?}\n    G -->|Yes| H[Done]\n    G -->|No| D"
+        }
+      ]
+    },
+    {
+      "type": "horizontalRule"
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Use the "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "AI Assist"
+        },
+        {
+          "type": "text",
+          "text": " button in the bubble menu to polish, rewrite, or translate selected text. Open the "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "Q&A"
+        },
+        {
+          "type": "text",
+          "text": " sidebar to ask questions about your document."
+        }
+      ]
+    }
+  ]
+}
