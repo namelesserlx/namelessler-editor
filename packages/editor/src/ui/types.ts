@@ -1,6 +1,7 @@
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import type { EditorState } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
+import type { ReactNode } from 'react';
 
 export interface EditorBubbleMenuShouldShowContext {
     editor: TiptapEditor;
@@ -14,15 +15,18 @@ export interface EditorBubbleMenuShouldShowContext {
 
 export type EditorBubbleMenuShouldShow = (context: EditorBubbleMenuShouldShowContext) => boolean;
 
+export interface EditorBubbleMenuCustomSection {
+    key: string;
+    placement: 'start' | 'end';
+    render: (editor: TiptapEditor) => ReactNode;
+    onClose?: () => void;
+}
+
 export interface EditorBubbleMenuOptions {
     enabled?: boolean;
     zIndex?: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
-    customSections?: Array<{
-        key: string;
-        placement: 'start' | 'end';
-        render: (editor: TiptapEditor) => React.ReactNode;
-    }>;
+    customSections?: EditorBubbleMenuCustomSection[];
 }
 
 export type EditorBubbleMenuConfig = boolean | EditorBubbleMenuOptions;
@@ -40,11 +44,7 @@ export interface ResolvedEditorBubbleMenuOptions {
     enabled: boolean;
     zIndex: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
-    customSections?: Array<{
-        key: string;
-        placement: 'start' | 'end';
-        render: (editor: TiptapEditor) => React.ReactNode;
-    }>;
+    customSections?: EditorBubbleMenuCustomSection[];
 }
 
 export interface ResolvedEditorUiOptions {

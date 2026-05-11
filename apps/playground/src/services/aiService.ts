@@ -4,11 +4,8 @@ let aiInstance: GoogleGenAI | null = null;
 
 const getAi = () => {
     if (!aiInstance) {
-        // In Vite, use import.meta.env, but also fallback to process.env for Node compatibility during build setup if needed
-        // Note: The system automatically injects GEMINI_API_KEY into process.env in the vite config
-        const apiKey =
-            process.env.GEMINI_API_KEY ||
-            (import.meta.env as Record<string, string | undefined>).VITE_GEMINI_API_KEY;
+        // Vite replaces this value at build time from GEMINI_API_KEY.
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is required');
         }
@@ -17,7 +14,6 @@ const getAi = () => {
     return aiInstance;
 };
 
-// Common models
 const FAST_MODEL = 'gemini-2.5-flash';
 const PRO_MODEL = 'gemini-2.5-flash';
 
@@ -37,7 +33,7 @@ export const generateContent = async (prompt: string, options?: GenerateOptions)
               }
             : undefined,
     });
-    return response.text;
+    return response.text ?? '';
 };
 
 export const generateContentStream = async (prompt: string, options?: GenerateOptions) => {

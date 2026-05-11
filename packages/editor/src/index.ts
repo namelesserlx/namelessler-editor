@@ -63,6 +63,7 @@ export type {
     UseEditorControllerOptions,
 } from './react';
 export type {
+    EditorBubbleMenuCustomSection,
     EditorBubbleMenuConfig,
     EditorBubbleMenuOptions,
     EditorBubbleMenuShouldShow,

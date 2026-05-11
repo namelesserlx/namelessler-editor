@@ -17,7 +17,7 @@ import {
     Strikethrough,
     Underline,
 } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
 import type { EditorFeatureFlags } from '../core/createEditorExtensions';
 import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../i18n';
@@ -25,7 +25,7 @@ import { sanitizeUrl } from '../security/urlPolicy';
 import { BubbleColorPicker } from './BubbleColorPicker';
 import { BubbleMenuSelect } from './BubbleMenuSelect';
 import { TooltipMenuButton } from './MenuButton';
-import type { EditorBubbleMenuShouldShow } from './types';
+import type { EditorBubbleMenuCustomSection, EditorBubbleMenuShouldShow } from './types';
 import { useEditorSnapshot } from './useEditorSnapshot';
 
 export interface DefaultBubbleMenuProps {
@@ -36,11 +36,7 @@ export interface DefaultBubbleMenuProps {
     colorPicker?: boolean;
     zIndex?: number;
     shouldShow?: EditorBubbleMenuShouldShow | null;
-    customSections?: Array<{
-        key: string;
-        placement: 'start' | 'end';
-        render: (editor: TiptapEditor) => ReactNode;
-    }>;
+    customSections?: EditorBubbleMenuCustomSection[];
 }
 
 function enabled(features: Partial<EditorFeatureFlags> | undefined, key: keyof EditorFeatureFlags) {
@@ -112,7 +108,18 @@ export function DefaultBubbleMenu({
         setActivePopover((current) => (current === 'link' ? current : null));
     }, [selectionKey]);
 
+    const closeCustomSections = () => {
+        customSections?.forEach((section) => section.onClose?.());
+    };
+
+    const closeBuiltInPopovers = () => {
+        setActivePopover(null);
+        setLinkUrl('');
+    };
+
     const setPopoverOpen = (popover: BubblePopover) => (open: boolean) => {
+        closeCustomSections();
+
         setActivePopover((current) => {
             if (open) {
                 return popover;
@@ -123,6 +130,7 @@ export function DefaultBubbleMenu({
     };
 
     const runCommand = (command: () => void) => {
+        closeCustomSections();
         setActivePopover(null);
         command();
     };
@@ -148,6 +156,7 @@ export function DefaultBubbleMenu({
     };
 
     const openLinkPanel = () => {
+        closeCustomSections();
         setLinkUrl((editor.getAttributes('link').href as string | undefined) ?? '');
         setActivePopover('link');
     };
@@ -241,7 +250,13 @@ export function DefaultBubbleMenu({
         >
             <div className="nlx-editor-bubble-menu-content">
                 {startSections.map((section) => (
-                    <span key={section.key} className="nlx-editor-menu-section">
+                    <span
+                        key={section.key}
+                        className="nlx-editor-menu-section"
+                        onClickCapture={closeBuiltInPopovers}
+                        onFocusCapture={closeBuiltInPopovers}
+                        onMouseDownCapture={closeBuiltInPopovers}
+                    >
                         {section.render(editor)}
                     </span>
                 ))}
@@ -479,7 +494,12 @@ export function DefaultBubbleMenu({
                 {endSections.map((section) => (
                     <React.Fragment key={section.key}>
                         <span className="nlx-editor-menu-divider" aria-hidden="true" />
-                        <span className="nlx-editor-menu-section">
+                        <span
+                            className="nlx-editor-menu-section"
+                            onClickCapture={closeBuiltInPopovers}
+                            onFocusCapture={closeBuiltInPopovers}
+                            onMouseDownCapture={closeBuiltInPopovers}
+                        >
                             {section.render(editor)}
                         </span>
                     </React.Fragment>

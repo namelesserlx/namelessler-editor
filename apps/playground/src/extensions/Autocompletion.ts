@@ -42,7 +42,7 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                     init(): PluginState {
                         return { decoration: null, suggestion: null, isLoading: false };
                     },
-                    apply(tr, value, oldState, newState): PluginState {
+                    apply(tr, value, _oldState, newState): PluginState {
                         const meta = tr.getMeta(AutocompletionKey);
                         if (meta) {
                             if (meta.type === 'setLoading') {

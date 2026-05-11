@@ -1,4 +1,4 @@
-import { act, type CSSProperties, type ReactNode } from 'react';
+import { act, useState, type CSSProperties, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DefaultBubbleMenu } from '../../src/ui/DefaultBubbleMenu';
@@ -175,5 +175,99 @@ describe('DefaultBubbleMenu UI', () => {
             container.querySelector<HTMLInputElement>('[data-nameless-editor-link-input="true"]')
                 ?.placeholder,
         ).toBe('输入链接地址...');
+    });
+
+    it('asks custom sections to close when built-in controls are used', () => {
+        const { editor } = createEditorMock();
+        const onClose = vi.fn();
+
+        act(() => {
+            root.render(
+                <DefaultBubbleMenu
+                    editor={editor as never}
+                    locale="zh-CN"
+                    customSections={[
+                        {
+                            key: 'ai',
+                            placement: 'start',
+                            onClose,
+                            render: () => <button type="button">AI</button>,
+                        },
+                    ]}
+                />,
+            );
+        });
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-style-trigger="true"]')
+                ?.click();
+        });
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes built-in popovers when a custom section opens', () => {
+        const { editor } = createEditorMock();
+
+        function CustomSectionHarness() {
+            const [customOpen, setCustomOpen] = useState(false);
+
+            return (
+                <DefaultBubbleMenu
+                    editor={editor as never}
+                    locale="zh-CN"
+                    customSections={[
+                        {
+                            key: 'ai',
+                            placement: 'start',
+                            render: () => (
+                                <span>
+                                    <button
+                                        type="button"
+                                        data-nameless-editor-custom-trigger="true"
+                                        onClick={() => setCustomOpen(true)}
+                                    >
+                                        AI
+                                    </button>
+                                    {customOpen ? (
+                                        <span data-nameless-editor-custom-popover="true">
+                                            AI actions
+                                        </span>
+                                    ) : null}
+                                </span>
+                            ),
+                        },
+                    ]}
+                />
+            );
+        }
+
+        act(() => {
+            root.render(<CustomSectionHarness />);
+        });
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-style-trigger="true"]')
+                ?.click();
+        });
+
+        expect(
+            container.querySelector('[data-nameless-editor-style-option="heading-1"]'),
+        ).not.toBeNull();
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-custom-trigger="true"]')
+                ?.click();
+        });
+
+        expect(
+            container.querySelector('[data-nameless-editor-custom-popover="true"]'),
+        ).not.toBeNull();
+        expect(
+            container.querySelector('[data-nameless-editor-style-option="heading-1"]'),
+        ).toBeNull();
     });
 });

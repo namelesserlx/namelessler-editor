@@ -223,6 +223,7 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
                       onOpenChange={setShowAiActions}
                   />
               ),
+              onClose: () => setShowAiActions(false),
           }
         : null;
 

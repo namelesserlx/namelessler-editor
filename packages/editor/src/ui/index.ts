@@ -18,6 +18,7 @@ export { TableBubbleMenu } from './TableBubbleMenu';
 export type { TableBubbleMenuProps } from './TableBubbleMenu';
 export { useEditorSnapshot } from './useEditorSnapshot';
 export type {
+    EditorBubbleMenuCustomSection,
     EditorBubbleMenuConfig,
     EditorBubbleMenuOptions,
     EditorBubbleMenuShouldShow,

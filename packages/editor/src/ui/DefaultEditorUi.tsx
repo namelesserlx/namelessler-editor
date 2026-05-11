@@ -35,17 +35,19 @@ export function DefaultEditorUi({
                     colorPicker={resolvedUi.colorPicker}
                 />
             ) : null}
-            {resolvedUi.bubbleMenu && canRenderFloatingMenus ? (
+            {resolvedUi.bubbleMenu.enabled && canRenderFloatingMenus ? (
                 <DefaultBubbleMenu
                     editor={editor}
                     features={features}
                     locale={locale}
                     linkPopover={resolvedUi.linkPopover}
                     colorPicker={resolvedUi.colorPicker}
+                    zIndex={resolvedUi.bubbleMenu.zIndex}
+                    shouldShow={resolvedUi.bubbleMenu.shouldShow}
                     customSections={resolvedUi.bubbleMenu.customSections}
                 />
             ) : null}
-            {resolvedUi.bubbleMenu && canRenderFloatingMenus ? (
+            {resolvedUi.bubbleMenu.enabled && canRenderFloatingMenus ? (
                 <TableBubbleMenu
                     editor={editor}
                     locale={locale}
