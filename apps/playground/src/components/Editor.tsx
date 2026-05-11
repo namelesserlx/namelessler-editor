@@ -93,6 +93,12 @@ export function Editor({
     const [showPreview, setShowPreview] = useState(false);
     const [savedSelection, setSavedSelection] = useState<{ from: number; to: number } | null>(null);
 
+    const syncEditorContent = useCallback((editor: TiptapEditor) => {
+        const text = editor.getText();
+        onTextUpdateRef.current?.(text);
+        onChangeRef.current?.(editor.getHTML(), text);
+    }, []);
+
     const controller = useEditorController({
         defaultContent: content || initContent,
         contentFormat: 'json',
@@ -116,15 +122,19 @@ export function Editor({
                 emptyEditorClass: 'is-editor-empty',
             }),
             Autocompletion.configure({
-                fetchSuggestion: async (text) => {
+                fetchSuggestion: async (text, signal) => {
                     if (!hasAiSettings()) {
                         return '';
                     }
 
-                    const res = await generateContent(text, {
-                        systemInstruction:
-                            'You are an AI completion assistant. Predict the next logical words to complete the current thought. ONLY output the continuation text. Do NOT include quotes, do NOT repeat the existing text. Keep it brief (max 15 words). Output EXACTLY the characters that should immediately follow.',
-                    });
+                    const res = await generateContent(
+                        `TEXT BEFORE CURSOR:\n${text}\n\nContinue from the cursor. Return only the new text that should be inserted after the final character.`,
+                        {
+                            systemInstruction:
+                                'You are an inline autocomplete engine. Continue the text after the cursor. Return only the suffix to insert. Never repeat, paraphrase, quote, summarize, or answer the text before the cursor. If there is no useful continuation, return an empty string. Keep it brief, ideally under 20 words. Output plain text only.',
+                            signal,
+                        },
+                    );
                     return res;
                 },
             }),
@@ -134,6 +144,7 @@ export function Editor({
             if (editorRef) {
                 editorRef.current = editor;
             }
+            syncEditorContent(editor);
         },
     });
 
@@ -149,17 +160,13 @@ export function Editor({
     useEffect(() => {
         if (!editor || editor.isDestroyed) return;
 
-        const handleUpdate = () => {
-            const text = editor.getText();
-            onTextUpdateRef.current?.(text);
-            onChangeRef.current?.(editor.getHTML(), text);
-        };
+        const handleUpdate = () => syncEditorContent(editor);
 
         editor.on('update', handleUpdate);
         return () => {
             editor.off('update', handleUpdate);
         };
-    }, [editor]);
+    }, [editor, syncEditorContent]);
 
     useEffect(() => {
         if (!editor || editor.isDestroyed) return;

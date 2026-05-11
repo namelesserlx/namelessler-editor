@@ -5,7 +5,56 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 export const AutocompletionKey = new PluginKey('autocompletion');
 
 export interface AutocompletionOptions {
-    fetchSuggestion: (text: string) => Promise<string>;
+    fetchSuggestion: (text: string, signal?: AbortSignal) => Promise<string>;
+}
+
+const CONTEXT_WINDOW = 2000;
+
+function normalizeForRepeatCheck(text: string) {
+    return text.replace(/\s+/g, '').toLowerCase();
+}
+
+function removeRepeatedPrefix(context: string, suggestion: string) {
+    const trimmedContext = context.trimEnd();
+    let nextSuggestion = suggestion.trimStart();
+
+    if (!trimmedContext || !nextSuggestion) {
+        return suggestion;
+    }
+
+    if (nextSuggestion.startsWith(trimmedContext)) {
+        nextSuggestion = nextSuggestion.slice(trimmedContext.length);
+    } else {
+        const maxOverlap = Math.min(trimmedContext.length, nextSuggestion.length);
+        for (let length = maxOverlap; length >= 8; length -= 1) {
+            if (trimmedContext.endsWith(nextSuggestion.slice(0, length))) {
+                nextSuggestion = nextSuggestion.slice(length);
+                break;
+            }
+        }
+    }
+
+    return nextSuggestion ? nextSuggestion.replace(/^(\n| )+/, ' ') : '';
+}
+
+function cleanSuggestionText(suggestion: string, context: string) {
+    const withoutRepeatedPrefix = removeRepeatedPrefix(context, suggestion);
+    const cleanSuggestion = withoutRepeatedPrefix.replace(/^(\n| )+/, ' ');
+    const normalizedSuggestion = normalizeForRepeatCheck(cleanSuggestion);
+
+    if (!normalizedSuggestion) {
+        return '';
+    }
+
+    const normalizedContext = normalizeForRepeatCheck(context);
+    if (
+        normalizedContext.endsWith(normalizedSuggestion) ||
+        (normalizedSuggestion.length >= 12 && normalizedContext.includes(normalizedSuggestion))
+    ) {
+        return '';
+    }
+
+    return cleanSuggestion;
 }
 
 export const Autocompletion = Extension.create<AutocompletionOptions>({
@@ -21,6 +70,8 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
         const fetchSuggestion = this.options.fetchSuggestion;
         let timeout: ReturnType<typeof setTimeout> | null = null;
         let activeRequest = 0;
+        let activeAbortController: AbortController | null = null;
+        let activeRequestText: string | null = null;
         let cooldownUntil = 0; // timestamp when we can retry after 429
         const suggestionCache = new Map<string, string>();
 
@@ -34,6 +85,22 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
             suggestion: string | null;
             isLoading: boolean;
         }
+
+        const clearTimeoutIfNeeded = () => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+        };
+
+        const cancelActiveRequest = () => {
+            if (activeAbortController) {
+                activeAbortController.abort();
+                activeAbortController = null;
+                activeRequestText = null;
+                activeRequest += 1;
+            }
+        };
 
         return [
             new Plugin({
@@ -137,12 +204,22 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                     return {
                         update(view) {
                             const state = view.state;
-                            if (timeout) clearTimeout(timeout);
+                            const pluginState = AutocompletionKey.getState(state) as
+                                | PluginState
+                                | undefined;
+                            clearTimeoutIfNeeded();
 
-                            if (!state.selection.empty) return;
+                            if (!state.selection.empty) {
+                                cancelActiveRequest();
+                                return;
+                            }
 
                             const { from } = state.selection;
-                            const text = state.doc.textBetween(Math.max(0, from - 2000), from, ' ');
+                            const text = state.doc.textBetween(
+                                Math.max(0, from - CONTEXT_WINDOW),
+                                from,
+                                ' ',
+                            );
 
                             // Only suggest if at the end of a block/line
                             const trailing = state.doc.textBetween(
@@ -150,16 +227,38 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                 Math.min(state.doc.content.size, from + 10),
                                 ' ',
                             );
-                            if (trailing.trim().length > 0) return;
+                            if (trailing.trim().length > 0) {
+                                cancelActiveRequest();
+                                return;
+                            }
 
-                            if (!text.trim()) return;
+                            if (!text.trim()) {
+                                cancelActiveRequest();
+                                return;
+                            }
+
+                            if (pluginState?.suggestion || pluginState?.isLoading) {
+                                return;
+                            }
 
                             // If in cooldown (after 429), silently skip
                             if (Date.now() < cooldownUntil) return;
 
+                            if (activeAbortController) {
+                                if (activeRequestText === text) {
+                                    return;
+                                }
+
+                                cancelActiveRequest();
+                            }
+
                             // Check cache
                             const cached = suggestionCache.get(text);
                             if (cached !== undefined) {
+                                if (pluginState?.suggestion === cached || pluginState?.isLoading) {
+                                    return;
+                                }
+
                                 // Use cached suggestion immediately
                                 if (cached) {
                                     view.dispatch(
@@ -176,9 +275,23 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                 // Re-check cooldown (might have changed during debounce)
                                 if (Date.now() < cooldownUntil) return;
 
+                                if (activeAbortController) return;
+
                                 const currentSelection = view.state.selection;
                                 if (!currentSelection.empty || currentSelection.from !== from)
                                     return;
+
+                                const currentText = view.state.doc.textBetween(
+                                    Math.max(0, currentSelection.from - CONTEXT_WINDOW),
+                                    currentSelection.from,
+                                    ' ',
+                                );
+                                if (currentText !== text) return;
+
+                                const abortController = new AbortController();
+                                activeAbortController = abortController;
+                                activeRequestText = text;
+                                const requestId = ++activeRequest;
 
                                 view.dispatch(
                                     view.state.tr.setMeta(AutocompletionKey, {
@@ -186,11 +299,13 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                     }),
                                 );
 
-                                const requestId = ++activeRequest;
-
-                                fetchSuggestion(text)
+                                fetchSuggestion(text, abortController.signal)
                                     .then((suggestion) => {
-                                        if (requestId !== activeRequest) return;
+                                        if (
+                                            requestId !== activeRequest ||
+                                            abortController.signal.aborted
+                                        )
+                                            return;
 
                                         const stillCurrentSelection = view.state.selection;
                                         if (
@@ -199,7 +314,10 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                         )
                                             return;
 
-                                        const cleanSuggestion = suggestion.replace(/^(\n| )+/, ' ');
+                                        const cleanSuggestion = cleanSuggestionText(
+                                            suggestion,
+                                            text,
+                                        );
                                         // Cache the result (including empty, to avoid re-requesting)
                                         suggestionCache.set(text, cleanSuggestion);
 
@@ -225,6 +343,10 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                         }
                                     })
                                     .catch((err: unknown) => {
+                                        if (abortController.signal.aborted) {
+                                            return;
+                                        }
+
                                         // Any API error → enter cooldown to stop hammering the API
                                         const e = err as {
                                             message?: string;
@@ -261,11 +383,18 @@ export const Autocompletion = Extension.create<AutocompletionOptions>({
                                                 err,
                                             );
                                         }
+                                    })
+                                    .finally(() => {
+                                        if (activeAbortController === abortController) {
+                                            activeAbortController = null;
+                                            activeRequestText = null;
+                                        }
                                     });
                             }, DEBOUNCE_MS);
                         },
                         destroy() {
-                            if (timeout) clearTimeout(timeout);
+                            clearTimeoutIfNeeded();
+                            cancelActiveRequest();
                             suggestionCache.clear();
                         },
                     };

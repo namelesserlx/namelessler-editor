@@ -1,3 +1,4 @@
+import type { CSSProperties, ReactNode } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { AiConfigurationError, generateContentStream, hasAiSettings } from '../services/aiService';
@@ -19,6 +20,153 @@ interface SidebarQAProps {
     onNotify?: (message: Omit<ToastMessage, 'id'>) => void;
 }
 
+const DEFAULT_SIDEBAR_WIDTH = 420;
+const MIN_SIDEBAR_WIDTH = 360;
+const MAX_SIDEBAR_WIDTH = 760;
+
+function createMessageId(prefix: string) {
+    return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+}
+
+function clampSidebarWidth(width: number) {
+    const viewportMax = typeof window === 'undefined' ? MAX_SIDEBAR_WIDTH : window.innerWidth - 48;
+
+    return Math.min(Math.max(width, MIN_SIDEBAR_WIDTH), Math.min(MAX_SIDEBAR_WIDTH, viewportMax));
+}
+
+function parseInlineMarkdown(text: string): ReactNode[] {
+    const nodes: ReactNode[] = [];
+    const pattern = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(text))) {
+        if (match.index > lastIndex) {
+            nodes.push(text.slice(lastIndex, match.index));
+        }
+
+        const token = match[0];
+        if (token.startsWith('**')) {
+            nodes.push(
+                <strong key={`${match.index}-strong`} className="font-semibold">
+                    {token.slice(2, -2)}
+                </strong>,
+            );
+        } else {
+            nodes.push(
+                <code
+                    key={`${match.index}-code`}
+                    className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.78em] text-slate-700"
+                >
+                    {token.slice(1, -1)}
+                </code>,
+            );
+        }
+
+        lastIndex = pattern.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+        nodes.push(text.slice(lastIndex));
+    }
+
+    return nodes;
+}
+
+function MarkdownMessage({ content }: { content: string }) {
+    const lines = content.split('\n');
+    const blocks: ReactNode[] = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+            continue;
+        }
+
+        if (trimmed.startsWith('```')) {
+            const codeLines: string[] = [];
+            index += 1;
+            while (index < lines.length && !lines[index].trim().startsWith('```')) {
+                codeLines.push(lines[index]);
+                index += 1;
+            }
+
+            blocks.push(
+                <pre
+                    key={`code-${index}`}
+                    className="my-2 overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs leading-5 text-slate-100"
+                >
+                    <code>{codeLines.join('\n')}</code>
+                </pre>,
+            );
+            continue;
+        }
+
+        const heading = trimmed.match(/^(#{1,4})\s+(.+)$/);
+        if (heading) {
+            blocks.push(
+                <div
+                    key={`heading-${index}`}
+                    className="mt-3 first:mt-0 text-[13px] font-semibold text-slate-950"
+                >
+                    {parseInlineMarkdown(heading[2])}
+                </div>,
+            );
+            continue;
+        }
+
+        const bulletItems: string[] = [];
+        while (index < lines.length) {
+            const item = lines[index].trim().match(/^[-*]\s+(.+)$/);
+            if (!item) break;
+            bulletItems.push(item[1]);
+            index += 1;
+        }
+
+        if (bulletItems.length > 0) {
+            index -= 1;
+            blocks.push(
+                <ul key={`ul-${index}`} className="my-2 list-disc space-y-1 pl-4">
+                    {bulletItems.map((item, itemIndex) => (
+                        <li key={`${itemIndex}-${item}`}>{parseInlineMarkdown(item)}</li>
+                    ))}
+                </ul>,
+            );
+            continue;
+        }
+
+        const orderedItems: string[] = [];
+        while (index < lines.length) {
+            const item = lines[index].trim().match(/^\d+\.\s+(.+)$/);
+            if (!item) break;
+            orderedItems.push(item[1]);
+            index += 1;
+        }
+
+        if (orderedItems.length > 0) {
+            index -= 1;
+            blocks.push(
+                <ol key={`ol-${index}`} className="my-2 list-decimal space-y-1 pl-4">
+                    {orderedItems.map((item, itemIndex) => (
+                        <li key={`${itemIndex}-${item}`}>{parseInlineMarkdown(item)}</li>
+                    ))}
+                </ol>,
+            );
+            continue;
+        }
+
+        blocks.push(
+            <p key={`p-${index}`} className="my-2 first:mt-0 last:mb-0">
+                {parseInlineMarkdown(trimmed)}
+            </p>,
+        );
+    }
+
+    return <div className="space-y-1">{blocks}</div>;
+}
+
 export function SidebarQA({
     documentText,
     isOpen,
@@ -35,6 +183,8 @@ export function SidebarQA({
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+    const [isResizing, setIsResizing] = useState(false);
     const activeRequestRef = useRef<AbortController | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,9 +200,33 @@ export function SidebarQA({
         }
     }, [isOpen]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const originalCursor = document.body.style.cursor;
+        const originalUserSelect = document.body.style.userSelect;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const handlePointerMove = (event: PointerEvent) => {
+            setSidebarWidth(clampSidebarWidth(window.innerWidth - event.clientX));
+        };
+        const stopResizing = () => setIsResizing(false);
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', stopResizing, { once: true });
+
+        return () => {
+            document.body.style.cursor = originalCursor;
+            document.body.style.userSelect = originalUserSelect;
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', stopResizing);
+        };
+    }, [isResizing]);
+
+    const askQuestion = async (question: string) => {
+        const userMsg = question.trim();
+        if (!userMsg || isLoading) return;
 
         if (!hasAiSettings()) {
             onNotify?.({
@@ -64,25 +238,43 @@ export function SidebarQA({
             return;
         }
 
-        const userMsg = input;
-        setInput('');
-        const newMsgId = Date.now().toString();
+        const context = documentText.trim();
+        if (!context) {
+            setMessages((prev) => [
+                ...prev,
+                { id: createMessageId('user'), role: 'user', content: userMsg },
+                {
+                    id: createMessageId('assistant'),
+                    role: 'assistant',
+                    content: '文档内容为空，无法进行总结。请先输入有效的文档内容。',
+                },
+            ]);
+            onNotify?.({
+                title: 'Document content is empty',
+                description: 'Add document content before using AI Q&A or summary.',
+                variant: 'error',
+            });
+            return;
+        }
+
+        const userMsgId = createMessageId('user');
+        const assistantMsgId = createMessageId('assistant');
         const request = new AbortController();
         activeRequestRef.current = request;
 
         setMessages((prev) => [
             ...prev,
-            { id: Date.now().toString(), role: 'user', content: userMsg },
-            { id: newMsgId, role: 'assistant', content: '' },
+            { id: userMsgId, role: 'user', content: userMsg },
+            { id: assistantMsgId, role: 'assistant', content: '' },
         ]);
 
         setIsLoading(true);
 
         try {
-            const prompt = `Here is the document context:\n\n---\n${documentText}\n---\n\nUser Question: ${userMsg}`;
+            const prompt = `Here is the document context:\n\n---\n${context}\n---\n\nUser Question: ${userMsg}`;
             const stream = await generateContentStream(prompt, {
                 systemInstruction:
-                    "You are a helpful AI assistant. Answer the user's questions strictly based on the provided document context. If the answer is not in the document, politely say so. Answer in the same language as the user's question.",
+                    "You are a helpful AI assistant. Answer the user's question strictly based on the provided document context. If the answer is not in the document, politely say so. Answer in the same language as the user's question. Do not rewrite, restate, or replace the user's question. Prefer concise paragraphs and short lists.",
                 usePro: true,
                 signal: request.signal,
             });
@@ -93,7 +285,7 @@ export function SidebarQA({
                     fullText += chunk.text;
                     setMessages((prev) =>
                         prev.map((msg) =>
-                            msg.id === newMsgId ? { ...msg, content: fullText } : msg,
+                            msg.id === assistantMsgId ? { ...msg, content: fullText } : msg,
                         ),
                     );
                 }
@@ -115,7 +307,7 @@ export function SidebarQA({
             });
             setMessages((prev) =>
                 prev.map((msg) =>
-                    msg.id === newMsgId
+                    msg.id === assistantMsgId
                         ? { ...msg, content: 'Sorry, I encountered an error answering that.' }
                         : msg,
                 ),
@@ -128,16 +320,42 @@ export function SidebarQA({
         }
     };
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const userMsg = input.trim();
+        if (!userMsg || isLoading) return;
+
+        setInput('');
+        void askQuestion(userMsg);
+    };
+
     const handleSummarize = () => {
-        setInput('请一句话总结这篇文档的内容。');
-        setTimeout(() => {
-            document.getElementById('qa-submit-btn')?.click();
-        }, 10);
+        void askQuestion('请一句话总结这篇文档的内容。');
     };
 
     return (
         <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <SheetContent className="w-[85vw] sm:max-w-md lg:max-w-md flex flex-col p-0 gap-0 border-l border-slate-200">
+            <SheetContent
+                className="!w-[min(var(--qa-sidebar-width),calc(100vw-48px))] !max-w-[calc(100vw-48px)] min-w-80 flex flex-col p-0 gap-0 border-l border-slate-200"
+                style={
+                    {
+                        '--qa-sidebar-width': `${sidebarWidth}px`,
+                    } as CSSProperties
+                }
+            >
+                <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize Document Q&A panel"
+                    className={cn(
+                        'absolute left-0 top-0 z-10 h-full w-2 -translate-x-1 cursor-col-resize touch-none',
+                        isResizing ? 'bg-slate-900/10' : 'hover:bg-slate-900/5',
+                    )}
+                    onPointerDown={(event) => {
+                        event.preventDefault();
+                        setIsResizing(true);
+                    }}
+                />
                 <SheetHeader className="p-4 border-b border-slate-200 flex flex-row items-center justify-between bg-slate-50/50 space-y-0 text-left">
                     <SheetTitle className="font-semibold text-slate-800 flex items-center tracking-tight text-sm">
                         <Bot className="w-4 h-4 mr-2 text-slate-700" />
@@ -173,15 +391,17 @@ export function SidebarQA({
                                     'px-4 py-2.5 rounded-2xl max-w-[80%] text-[13px] leading-relaxed shadow-sm',
                                     msg.role === 'user'
                                         ? 'bg-slate-900 text-white rounded-tr-sm'
-                                        : 'bg-white text-slate-800 rounded-tl-sm whitespace-pre-wrap border border-slate-200',
+                                        : 'bg-white text-slate-800 rounded-tl-sm border border-slate-200',
                                 )}
                             >
-                                {msg.content ||
+                                {msg.content && msg.role === 'assistant' ? (
+                                    <MarkdownMessage content={msg.content} />
+                                ) : (
+                                    msg.content ||
                                     (msg.role === 'assistant' && isLoading ? (
                                         <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                                    ) : (
-                                        ''
-                                    ))}
+                                    ) : null)
+                                )}
                             </div>
                         </div>
                     ))}
@@ -191,7 +411,8 @@ export function SidebarQA({
                 <div className="p-3 bg-white border-t border-slate-100 flex justify-center">
                     <button
                         onClick={handleSummarize}
-                        className="text-xs font-medium text-slate-700 hover:text-slate-900 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 px-4 py-2 rounded-full transition-colors flex items-center"
+                        disabled={isLoading}
+                        className="text-xs font-medium text-slate-700 hover:text-slate-900 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 px-4 py-2 rounded-full transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Sparkles className="w-3.5 h-3.5 mr-1.5" /> 一键总结全文 (Summarize)
                     </button>
@@ -207,12 +428,11 @@ export function SidebarQA({
                             className="flex-1 bg-white border border-slate-300 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-800 outline-none transition-all shadow-sm"
                         />
                         <button
-                            id="qa-submit-btn"
                             type="submit"
                             disabled={!input.trim() || isLoading}
-                            className="w-10 h-10 rounded-2xl bg-slate-900 hover:bg-slate-800 shadow-sm text-white flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-900 text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <Send className="w-4 h-4 ml-0.5" />
+                            <Send className="h-4 w-4" />
                         </button>
                     </form>
                 </div>
