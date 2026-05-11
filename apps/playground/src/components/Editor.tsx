@@ -30,7 +30,13 @@ import {
 } from 'lucide-react';
 import type { JSONContent } from '@tiptap/core';
 import { Autocompletion } from '../extensions/Autocompletion';
-import { generateContent, generateContentStream } from '../services/aiService';
+import {
+    AiConfigurationError,
+    generateContent,
+    generateContentStream,
+    hasAiSettings,
+} from '../services/aiService';
+import type { ToastMessage } from './ToastStack';
 import initContent from '../data/init.json';
 
 type AIAction = 'polish' | 'rewrite' | 'expand' | 'shorten' | 'translate';
@@ -51,6 +57,8 @@ interface EditorProps {
     onChange?: (html: string, text: string) => void;
     onTextUpdate?: (text: string) => void;
     editorRef?: React.MutableRefObject<TiptapEditor | null>;
+    onOpenAiSettings?: () => void;
+    onNotify?: (message: Omit<ToastMessage, 'id'>) => void;
 }
 
 const lowlight = createLowlight();
@@ -64,15 +72,24 @@ lowlight.register('html', xml);
 lowlight.register('sql', sql);
 lowlight.register('markdown', markdown);
 
-export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorProps) {
+export function Editor({
+    content,
+    onChange,
+    onTextUpdate,
+    editorRef,
+    onOpenAiSettings,
+    onNotify,
+}: EditorProps) {
     const [editorInstance, setEditorInstance] = useState<TiptapEditor | null>(null);
     const onTextUpdateRef = useRef(onTextUpdate);
     onTextUpdateRef.current = onTextUpdate;
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
+    const activeRequestRef = useRef<AbortController | null>(null);
     const [showAiActions, setShowAiActions] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [streamingText, setStreamingText] = useState('');
+    const [previewError, setPreviewError] = useState<string | null>(null);
     const [showPreview, setShowPreview] = useState(false);
     const [savedSelection, setSavedSelection] = useState<{ from: number; to: number } | null>(null);
 
@@ -100,6 +117,10 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
             }),
             Autocompletion.configure({
                 fetchSuggestion: async (text) => {
+                    if (!hasAiSettings()) {
+                        return '';
+                    }
+
                     const res = await generateContent(text, {
                         systemInstruction:
                             'You are an AI completion assistant. Predict the next logical words to complete the current thought. ONLY output the continuation text. Do NOT include quotes, do NOT repeat the existing text. Keep it brief (max 15 words). Output EXACTLY the characters that should immediately follow.',
@@ -117,6 +138,12 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
     });
 
     const editor = editorInstance;
+
+    useEffect(() => {
+        return () => {
+            activeRequestRef.current?.abort();
+        };
+    }, []);
 
     // Forward text updates to parent
     useEffect(() => {
@@ -160,20 +187,38 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
     const handleAiAction = useCallback(
         async (action: AIAction) => {
             if (!editor) return;
+
+            if (!hasAiSettings()) {
+                setShowAiActions(false);
+                onNotify?.({
+                    title: 'AI interface is not configured',
+                    description: 'Choose Google or DeepSeek and add your own API key.',
+                    variant: 'error',
+                });
+                onOpenAiSettings?.();
+                return;
+            }
+
             const { from, to } = editor.state.selection;
             const selectedText = editor.state.doc.textBetween(from, to, ' ');
             if (!selectedText) return;
+
+            activeRequestRef.current?.abort();
+            const request = new AbortController();
+            activeRequestRef.current = request;
 
             setSavedSelection({ from, to });
             setIsLoading(true);
             setShowAiActions(false);
             setShowPreview(true);
             setStreamingText('');
+            setPreviewError(null);
 
             try {
                 const stream = await generateContentStream(selectedText, {
                     systemInstruction: AI_PROMPTS[action],
                     usePro: action === 'rewrite' || action === 'translate',
+                    signal: request.signal,
                 });
 
                 let fullText = '';
@@ -184,13 +229,35 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
                     }
                 }
             } catch (error) {
+                if (request.signal.aborted) {
+                    return;
+                }
+
+                const message =
+                    error instanceof AiConfigurationError
+                        ? 'AI interface is not configured'
+                        : error instanceof Error && error.message
+                          ? error.message
+                          : 'AI request failed';
+
                 console.error(error);
-                setStreamingText('An error occurred during AI processing.');
+                setPreviewError(message);
+                onNotify?.({
+                    title: message,
+                    description:
+                        message === 'AI interface is not configured'
+                            ? 'Open AI Settings and add your own API key.'
+                            : 'Please check the provider, model, and API key.',
+                    variant: 'error',
+                });
             } finally {
-                setIsLoading(false);
+                if (activeRequestRef.current === request) {
+                    activeRequestRef.current = null;
+                    setIsLoading(false);
+                }
             }
         },
-        [editor],
+        [editor, onNotify, onOpenAiSettings],
     );
 
     const applyChanges = () => {
@@ -203,12 +270,17 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
             .run();
         setShowPreview(false);
         setStreamingText('');
+        setPreviewError(null);
         setSavedSelection(null);
     };
 
     const closePreview = () => {
+        activeRequestRef.current?.abort();
+        activeRequestRef.current = null;
+        setIsLoading(false);
         setShowPreview(false);
         setStreamingText('');
+        setPreviewError(null);
         setSavedSelection(null);
     };
 
@@ -251,26 +323,43 @@ export function Editor({ content, onChange, onTextUpdate, editorRef }: EditorPro
                                 AI Preview
                                 {isLoading && <Loader2 className="w-3 h-3 ml-2 animate-spin" />}
                             </div>
+                            <button
+                                type="button"
+                                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label="Close AI preview"
+                                onClick={closePreview}
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
                         <div className="p-4 text-sm text-slate-700 overflow-y-auto whitespace-pre-wrap flex-1">
-                            {streamingText || (isLoading ? 'Thinking...' : '')}
+                            {previewError ? (
+                                <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-800">
+                                    {previewError}
+                                </div>
+                            ) : (
+                                streamingText || (isLoading ? 'Thinking...' : '')
+                            )}
                         </div>
-                        {!isLoading && streamingText && (
+                        {(!isLoading || previewError) && (streamingText || previewError) ? (
                             <div className="flex items-center justify-end p-3 border-t border-slate-100 bg-slate-50 gap-2">
                                 <button
                                     onClick={closePreview}
                                     className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors flex items-center"
                                 >
-                                    <X className="w-3 h-3 mr-1" /> Discard
+                                    <X className="w-3 h-3 mr-1" />
+                                    {previewError ? 'Close' : 'Discard'}
                                 </button>
-                                <button
-                                    onClick={applyChanges}
-                                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white flex items-center shadow-sm transition-colors"
-                                >
-                                    <Check className="w-3 h-3 mr-1" /> Replace Selection
-                                </button>
+                                {!previewError ? (
+                                    <button
+                                        onClick={applyChanges}
+                                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white flex items-center shadow-sm transition-colors"
+                                    >
+                                        <Check className="w-3 h-3 mr-1" /> Replace Selection
+                                    </button>
+                                ) : null}
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             )}
