@@ -1,7 +1,7 @@
 export { Editor, default } from './Editor';
 export { EditorRoot } from './EditorRoot';
 export { useEditorController } from './useEditorController';
-export { ReadonlyRenderer } from '../readonly';
+export { ReadonlyHtml, ReadonlyRenderer, renderReadonlyHtml } from '../readonly';
 export type {
     AnyEditorProps,
     EditorController,
@@ -9,4 +9,8 @@ export type {
     EditorUpdateMeta,
     UseEditorControllerOptions,
 } from './types';
-export type { ReadonlyRendererProps } from '../readonly';
+export type {
+    ReadonlyHtmlProps,
+    ReadonlyRendererProps,
+    RenderReadonlyHtmlOptions,
+} from '../readonly';

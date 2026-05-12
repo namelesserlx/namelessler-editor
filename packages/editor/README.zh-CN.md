@@ -76,7 +76,22 @@ async function save() {
 
 ## 👀 只读渲染
 
-如果你希望渲染已存储的内容，而不引入编辑态入口，建议使用独立的只读入口：
+只读渲染的核心能力是把 Tiptap JSON / HTML / Markdown 同步转换成安全 HTML，适合 SSR、SEO、缓存和前台内容展示页：
+
+```tsx
+import { ReadonlyHtml, renderReadonlyHtml } from '@namelesserlx/editor/readonly';
+import '@namelesserlx/editor/style.css';
+
+export function ArticleBody({ content }: { content: unknown }) {
+  const html = renderReadonlyHtml(content, {
+    contentFormat: 'json',
+  }).value;
+
+  return <ReadonlyHtml html={html} />;
+}
+```
+
+如果只是后台预览或客户端内嵌展示，也可以直接使用 React 薄壳组件：
 
 ```tsx
 import { ReadonlyRenderer } from '@namelesserlx/editor/readonly';
@@ -87,7 +102,7 @@ export function ArticleBody({ content }: { content: unknown }) {
 }
 ```
 
-`@namelesserlx/editor/react` 也会为了方便而导出 `ReadonlyRenderer`，但如果你更在意 bundle 边界，推荐优先使用 `/readonly`。
+`@namelesserlx/editor/react` 也会为了方便而导出这些只读 API，但如果你更在意 bundle 边界，推荐优先使用 `/readonly`。
 
 ---
 
@@ -236,8 +251,8 @@ export function App() {
 ## 📚 包入口
 
 - `@namelesserlx/editor` - 顶层便捷导出
-- `@namelesserlx/editor/react` - 编辑器组件、controller hook、只读组件便捷导出
-- `@namelesserlx/editor/readonly` - 不带编辑入口的只读渲染器
+- `@namelesserlx/editor/react` - 编辑器组件、controller hook、只读 API 便捷导出
+- `@namelesserlx/editor/readonly` - 不带编辑入口的安全 HTML 生成和只读渲染 API
 - `@namelesserlx/editor/core` - 内容工具和 extension 工厂
 - `@namelesserlx/editor/format` - HTML / Markdown 转换工具
 - `@namelesserlx/editor/security` - HTML 和 URL 安全辅助工具

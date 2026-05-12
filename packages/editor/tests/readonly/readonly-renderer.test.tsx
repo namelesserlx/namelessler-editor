@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ReadonlyRenderer } from '../../src/readonly';
+import { ReadonlyHtml, ReadonlyRenderer, renderReadonlyHtml } from '../../src/readonly';
 
 describe('ReadonlyRenderer', () => {
     let container: HTMLDivElement;
@@ -93,5 +94,60 @@ describe('ReadonlyRenderer', () => {
 
         expect(container.textContent).toContain('Readonly Markdown');
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('renders safe HTML synchronously for SSR and cacheable display paths', () => {
+        const result = renderReadonlyHtml(
+            {
+                type: 'doc',
+                content: [
+                    {
+                        type: 'paragraph',
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'SSR readonly',
+                                marks: [{ type: 'bold' }],
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                contentFormat: 'json',
+            },
+        );
+
+        expect(result.value).toBe('<p><strong>SSR readonly</strong></p>');
+        expect(result.warnings).toEqual([]);
+        expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('includes readonly content in server-rendered markup', () => {
+        const html = renderToString(
+            <ReadonlyRenderer
+                content={{
+                    type: 'doc',
+                    content: [
+                        {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: 'Server visible' }],
+                        },
+                    ],
+                }}
+            />,
+        );
+
+        expect(html).toContain('Server visible');
+        expect(html).toContain('data-nameless-editor-readonly="true"');
+    });
+
+    it('renders precomputed safe HTML without running content conversion', () => {
+        act(() => {
+            root.render(<ReadonlyHtml html="<p>Cached readonly HTML</p>" />);
+        });
+
+        expect(container.textContent).toContain('Cached readonly HTML');
+        expect(container.querySelector('[data-nameless-editor-readonly="true"]')).not.toBeNull();
     });
 });

@@ -76,7 +76,22 @@ async function save() {
 
 ## 👀 Readonly Rendering
 
-Use the dedicated readonly entry when you want to render stored content without importing the editing entry:
+Readonly rendering is centered on synchronous safe HTML generation from Tiptap JSON / HTML / Markdown. Use it for SSR, SEO, caching, and public display pages:
+
+```tsx
+import { ReadonlyHtml, renderReadonlyHtml } from '@namelesserlx/editor/readonly';
+import '@namelesserlx/editor/style.css';
+
+export function ArticleBody({ content }: { content: unknown }) {
+  const html = renderReadonlyHtml(content, {
+    contentFormat: 'json',
+  }).value;
+
+  return <ReadonlyHtml html={html} />;
+}
+```
+
+For admin previews or client-only embedded display, you can use the React wrapper directly:
 
 ```tsx
 import { ReadonlyRenderer } from '@namelesserlx/editor/readonly';
@@ -87,7 +102,7 @@ export function ArticleBody({ content }: { content: unknown }) {
 }
 ```
 
-`@namelesserlx/editor/react` also re-exports `ReadonlyRenderer` for convenience, but `/readonly` is the preferred display-focused entry when bundle boundaries matter.
+`@namelesserlx/editor/react` also re-exports these readonly APIs for convenience, but `/readonly` is the preferred display-focused entry when bundle boundaries matter.
 
 ---
 
@@ -236,8 +251,8 @@ This package does **not** replace server-side validation, upload security, or bu
 ## 📚 Package Entry Points
 
 - `@namelesserlx/editor` - top-level convenience exports
-- `@namelesserlx/editor/react` - editor component, controller hook, convenience readonly export
-- `@namelesserlx/editor/readonly` - readonly renderer without the editing entry
+- `@namelesserlx/editor/react` - editor component, controller hook, convenience readonly API exports
+- `@namelesserlx/editor/readonly` - safe HTML generation and readonly rendering without the editing entry
 - `@namelesserlx/editor/core` - content helpers and extension factory
 - `@namelesserlx/editor/format` - HTML / Markdown conversion helpers
 - `@namelesserlx/editor/security` - HTML and URL safety helpers

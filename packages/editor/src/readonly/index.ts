@@ -1,2 +1,6 @@
-export { ReadonlyRenderer } from './ReadonlyRenderer';
-export type { ReadonlyRendererProps } from './ReadonlyRenderer';
+export { ReadonlyHtml, ReadonlyRenderer, renderReadonlyHtml } from './ReadonlyRenderer';
+export type {
+    ReadonlyHtmlProps,
+    ReadonlyRendererProps,
+    RenderReadonlyHtmlOptions,
+} from './ReadonlyRenderer';

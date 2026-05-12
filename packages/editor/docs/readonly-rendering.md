@@ -1,15 +1,19 @@
 # Readonly Rendering
 
-Readonly rendering is exported from the React entry for the common path:
+Readonly rendering is a safe HTML display pipeline, not a readonly Tiptap runtime. The core API is synchronous so it works for SSR, SEO, static generation, and cached article HTML:
 
 ```tsx
-import { ReadonlyRenderer } from '@namelesserlx/editor/react';
+import { ReadonlyHtml, renderReadonlyHtml } from '@namelesserlx/editor/readonly';
 import '@namelesserlx/editor/style.css';
 
-<ReadonlyRenderer content={articleJson} contentFormat="json" />;
+const html = renderReadonlyHtml(articleJson, {
+  contentFormat: 'json',
+}).value;
+
+<ReadonlyHtml html={html} />;
 ```
 
-It is also provided through a separate entry:
+For client-only previews, use `ReadonlyRenderer`. It calls the same `renderReadonlyHtml` function during render:
 
 ```tsx
 import { ReadonlyRenderer } from '@namelesserlx/editor/readonly';
@@ -18,11 +22,17 @@ import '@namelesserlx/editor/style.css';
 <ReadonlyRenderer content={articleJson} contentFormat="json" />;
 ```
 
+The React entry also re-exports these APIs for convenience:
+
+```tsx
+import { ReadonlyRenderer, renderReadonlyHtml } from '@namelesserlx/editor/react';
+```
+
 Use `/readonly` for public article pages and other display-only surfaces. It avoids importing editing UI, toolbar controls, and editing handlers.
 
 ## Supported Input
 
-ReadonlyRenderer accepts the same input formats:
+`renderReadonlyHtml` and `ReadonlyRenderer` accept the same input formats:
 
 - `json`
 - `html`
@@ -30,11 +40,24 @@ ReadonlyRenderer accepts the same input formats:
 
 JSON is preferred for stored content:
 
-```tsx
-<ReadonlyRenderer content={article.contentJson} contentFormat="json" />
+```ts
+const html = renderReadonlyHtml(article.contentJson, {
+  contentFormat: 'json',
+}).value;
 ```
 
 HTML and Markdown are treated as external import formats and are converted through the same format adapters as the editor.
+
+For the fastest public page path, generate and persist display HTML when the article is saved:
+
+```ts
+const contentJson = controller.getJSON();
+const contentHtml = renderReadonlyHtml(contentJson, {
+  contentFormat: 'json',
+}).value;
+
+await saveArticle({ contentJson, contentHtml });
+```
 
 ## Security
 
@@ -43,24 +66,23 @@ Readonly rendering sanitizes external HTML before rendering.
 Iframe remains disabled unless both schema and HTML policy are explicitly configured:
 
 ```tsx
-<ReadonlyRenderer
-  content={html}
-  contentFormat="html"
-  editorOptions={{
+const html = renderReadonlyHtml(content, {
+  contentFormat: 'html',
+  editorOptions: {
     features: {
       iframe: true,
     },
     iframe: {
       allowedHosts: ['player.example'],
     },
-  }}
-  htmlPolicy={{
+  },
+  htmlPolicy: {
     iframe: {
       enabled: true,
       allowedHosts: ['player.example'],
     },
-  }}
-/>
+  },
+}).value;
 ```
 
 ## Bundle Boundary

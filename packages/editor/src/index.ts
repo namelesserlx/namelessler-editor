@@ -54,7 +54,15 @@ export type {
 } from './format';
 export { DEFAULT_EDITOR_LOCALE, SUPPORTED_EDITOR_LOCALES } from './i18n';
 export type { EditorLocale } from './i18n';
-export { Editor, EditorRoot, ReadonlyRenderer, default, useEditorController } from './react';
+export {
+    Editor,
+    EditorRoot,
+    ReadonlyHtml,
+    ReadonlyRenderer,
+    default,
+    renderReadonlyHtml,
+    useEditorController,
+} from './react';
 export type {
     AnyEditorProps,
     EditorController,
@@ -71,6 +79,10 @@ export type {
     EditorUiConfig,
     EditorUiOptions,
 } from './ui';
-export type { ReadonlyRendererProps } from './readonly';
+export type {
+    ReadonlyHtmlProps,
+    ReadonlyRendererProps,
+    RenderReadonlyHtmlOptions,
+} from './readonly';
 export { sanitizeHtml, sanitizeUrl } from './security';
 export type { HtmlIframePolicy, HtmlPolicy, UrlPolicy } from './security';
