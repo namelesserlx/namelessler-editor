@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { extname } from 'node:path';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
@@ -7,6 +8,44 @@ import * as coreEntry from '../../src/core';
 import * as uiEntry from '../../src/ui';
 
 const editorRoot = join(__dirname, '..', '..', 'src');
+const tiptapPeerRange = '>=3.22.5 <4';
+const sourceExtensions = new Set(['.ts', '.tsx']);
+
+function listSourceFiles(directory: string): string[] {
+    return readdirSync(directory).flatMap((entry) => {
+        const path = join(directory, entry);
+        const stats = statSync(path);
+
+        if (stats.isDirectory()) {
+            return listSourceFiles(path);
+        }
+
+        return sourceExtensions.has(extname(path)) ? [path] : [];
+    });
+}
+
+function toPackageName(specifier: string): string {
+    const [scope, name] = specifier.split('/');
+
+    return `${scope}/${name}`;
+}
+
+function findTiptapRuntimePackages(): string[] {
+    const packageNames = new Set<string>();
+
+    listSourceFiles(editorRoot).forEach((path) => {
+        const source = readFileSync(path, 'utf8');
+        const specifierPattern = /['"](@tiptap\/[^'"]+)['"]/g;
+
+        for (const match of source.matchAll(specifierPattern)) {
+            packageNames.add(toPackageName(match[1]));
+        }
+    });
+
+    return [...packageNames].sort();
+}
+
+const tiptapRuntimePackages = findTiptapRuntimePackages();
 
 describe('editor package cleanup', () => {
     it('does not expose old business presets or legacy helpers from the root entry', () => {
@@ -41,6 +80,26 @@ describe('editor package cleanup', () => {
         );
         expect(existsSync(join(editorRoot, 'upload'))).toBe(false);
         expect(existsSync(join(editorRoot, 'security/uploadPolicy.ts'))).toBe(false);
+    });
+
+    it('keeps Tiptap runtime packages as peer dependencies to avoid duplicate editor instances', () => {
+        expect(
+            Object.keys(packageJson.dependencies).filter((name) => name.startsWith('@tiptap/')),
+        ).toEqual([]);
+        expect(tiptapRuntimePackages).not.toEqual([]);
+
+        expect(
+            Object.keys(packageJson.peerDependencies)
+                .filter((name) => name.startsWith('@tiptap/'))
+                .sort(),
+        ).toEqual(tiptapRuntimePackages);
+
+        tiptapRuntimePackages.forEach((packageName) => {
+            expect(packageJson.peerDependencies).toHaveProperty(packageName);
+            expect(packageJson.devDependencies).toHaveProperty(packageName);
+            expect(packageJson.peerDependencies[packageName]).toBe(tiptapPeerRange);
+            expect(packageJson.devDependencies[packageName]).toMatch(/^\d+\.\d+\.\d+$/);
+        });
     });
 
     it('does not expose first-party message override APIs in v1', () => {

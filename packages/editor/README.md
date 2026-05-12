@@ -23,10 +23,19 @@ React Rich Text Editor for Tiptap with built-in UI, readonly rendering, JSON-fir
 ## 📦 Installation
 
 ```bash
-pnpm add @namelesserlx/editor react react-dom
+pnpm add @namelesserlx/editor react react-dom \
+  @tiptap/core @tiptap/react @tiptap/pm \
+  @tiptap/starter-kit @tiptap/html @tiptap/markdown \
+  @tiptap/extension-code-block-lowlight @tiptap/extension-highlight \
+  @tiptap/extension-link @tiptap/extension-table \
+  @tiptap/extension-task-item @tiptap/extension-task-list \
+  @tiptap/extension-text-align @tiptap/extension-text-style \
+  @tiptap/extension-underline
 ```
 
 This package is **ESM-only** and targets modern React + bundler setups.
+
+The direct `@tiptap/*` runtime packages used by this SDK are peer dependencies by design. The SDK, built-in UI, readonly renderer, import/export helpers, and app-owned custom extensions must resolve to one Tiptap / ProseMirror runtime. Keep the explicit peer packages on one compatible Tiptap v3 line in the consuming app; do not allow a nested second Tiptap copy under this package.
 
 Default styles are **not** auto-injected. Import the stylesheet when using the built-in UI:
 
@@ -134,6 +143,8 @@ Format helpers return:
 ## 🧩 Custom Extensions
 
 Business-specific extensions belong in the consuming app. Pass them through `extensions`, and use `editorOptions` to configure the SDK's built-in feature set.
+
+Custom extensions should resolve `@tiptap/core` and `@tiptap/pm` from the app-level peer runtime. This keeps extension instances, schema objects, commands, and ProseMirror state classes compatible across editing, readonly rendering, and import/export.
 
 ```tsx
 import { Editor, useEditorController } from '@namelesserlx/editor/react';

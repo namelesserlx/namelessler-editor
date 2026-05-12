@@ -23,10 +23,19 @@
 ## 📦 安装
 
 ```bash
-pnpm add @namelesserlx/editor react react-dom
+pnpm add @namelesserlx/editor react react-dom \
+  @tiptap/core @tiptap/react @tiptap/pm \
+  @tiptap/starter-kit @tiptap/html @tiptap/markdown \
+  @tiptap/extension-code-block-lowlight @tiptap/extension-highlight \
+  @tiptap/extension-link @tiptap/extension-table \
+  @tiptap/extension-task-item @tiptap/extension-task-list \
+  @tiptap/extension-text-align @tiptap/extension-text-style \
+  @tiptap/extension-underline
 ```
 
 本包是 **ESM-only**，面向现代 React + bundler 环境。
+
+这个 SDK 直接引用的 `@tiptap/*` runtime 包都会作为 peer dependencies 交给宿主应用安装。这样 SDK、内置 UI、只读渲染、导入导出工具和业务自定义 extensions 会共用同一套 Tiptap / ProseMirror runtime。宿主应用里这些显式 peer 包应该保持在同一条兼容的 Tiptap v3 版本线上，不要让这个包下面再出现第二套嵌套的 Tiptap。
 
 默认样式**不会自动注入**。如果要使用内置 UI，请手动引入样式文件：
 
@@ -134,6 +143,8 @@ const html = exportEditorContent(json, {
 ## 🧩 自定义扩展
 
 业务专属 extensions 应该放在宿主应用里，通过 `extensions` 传入；通过 `editorOptions` 可以配置 SDK 内置的 extension 能力。
+
+自定义 extensions 应该从应用级 peer runtime 解析同一组 `@tiptap/core` 与 `@tiptap/pm`。这样 editing、只读渲染、导入导出路径里的 extension 实例、schema、commands 和 ProseMirror state class 才能保持一致。
 
 ```tsx
 import { Editor, useEditorController } from '@namelesserlx/editor/react';
