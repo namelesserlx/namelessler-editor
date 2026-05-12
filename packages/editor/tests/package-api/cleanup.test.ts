@@ -5,11 +5,30 @@ import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 import * as rootEntry from '../../src';
 import * as coreEntry from '../../src/core';
+import * as coreExtensionsEntry from '../../src/core/extensions';
+import * as coreModelEntry from '../../src/core/model';
+import * as reactControllerEntry from '../../src/react/controller';
+import * as reactEditorEntry from '../../src/react/editor';
 import * as uiEntry from '../../src/ui';
 
 const editorRoot = join(__dirname, '..', '..', 'src');
 const tiptapPeerRange = '>=3.22.5 <4';
 const sourceExtensions = new Set(['.ts', '.tsx']);
+const publicExportPaths = [
+    '.',
+    './core',
+    './core/extensions',
+    './core/model',
+    './format',
+    './i18n',
+    './react',
+    './react/controller',
+    './react/editor',
+    './readonly',
+    './security',
+    './style.css',
+    './ui',
+];
 
 function listSourceFiles(directory: string): string[] {
     return readdirSync(directory).flatMap((entry) => {
@@ -48,6 +67,40 @@ function findTiptapRuntimePackages(): string[] {
 const tiptapRuntimePackages = findTiptapRuntimePackages();
 
 describe('editor package cleanup', () => {
+    it('publishes only documented public entry points', () => {
+        expect(Object.keys(packageJson.exports).sort()).toEqual(publicExportPaths);
+    });
+
+    it('keeps the top-level entry free of React editor runtime exports', () => {
+        expect(Object.keys(rootEntry)).not.toEqual(
+            expect.arrayContaining([
+                'Editor',
+                'EditorRoot',
+                'ReadonlyHtml',
+                'ReadonlyRenderer',
+                'renderReadonlyHtml',
+                'useEditorController',
+            ]),
+        );
+    });
+
+    it('provides focused React and core subpath entries', () => {
+        expect(Object.keys(reactControllerEntry).sort()).toEqual(['useEditorController']);
+        expect(Object.keys(reactEditorEntry).sort()).toEqual(['Editor', 'EditorRoot', 'default']);
+        expect(Object.keys(coreModelEntry).sort()).toEqual([
+            'createEmptyDocument',
+            'createNormalizeOptions',
+            'isEditorJson',
+            'normalizeEditorJson',
+        ]);
+        expect(Object.keys(coreExtensionsEntry).sort()).toEqual([
+            'IframeEmbed',
+            'createEditorExtensions',
+            'createLowlight',
+            'createLowlightRegistry',
+        ]);
+    });
+
     it('does not expose old business presets or legacy helpers from the root entry', () => {
         const rootKeys = Object.keys(rootEntry);
 
@@ -127,6 +180,7 @@ describe('editor package cleanup', () => {
             'core/EditorRoot.tsx',
             'core/buildEditorExtensions.ts',
             'presets',
+            'react/Editor.tsx',
             'ui/EditorBubbleMenu.tsx',
             'ui/menus',
         ].forEach((relativePath) => {

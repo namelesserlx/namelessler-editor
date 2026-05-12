@@ -18,6 +18,16 @@
       "import": "./dist/core/index.js",
       "default": "./dist/core/index.js"
     },
+    "./core/extensions": {
+      "types": "./dist/core/extensions.d.ts",
+      "import": "./dist/core/extensions.js",
+      "default": "./dist/core/extensions.js"
+    },
+    "./core/model": {
+      "types": "./dist/core/model.d.ts",
+      "import": "./dist/core/model.js",
+      "default": "./dist/core/model.js"
+    },
     "./format": {
       "types": "./dist/format/index.d.ts",
       "import": "./dist/format/index.js",
@@ -32,6 +42,16 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js",
       "default": "./dist/react/index.js"
+    },
+    "./react/controller": {
+      "types": "./dist/react/controller.d.ts",
+      "import": "./dist/react/controller.js",
+      "default": "./dist/react/controller.js"
+    },
+    "./react/editor": {
+      "types": "./dist/react/editor.d.ts",
+      "import": "./dist/react/editor.js",
+      "default": "./dist/react/editor.js"
     },
     "./readonly": {
       "types": "./dist/readonly/index.d.ts",

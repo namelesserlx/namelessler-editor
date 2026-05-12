@@ -1,7 +1,7 @@
 import { Code, FileJson, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { Editor as TiptapEditor } from '@tiptap/react';
-import { exportMarkdown } from '@namelesserlx/editor';
+import { exportMarkdown } from '@namelesserlx/editor/format';
 import { CodeBlockPro } from '@tiptap-codeless/extension-code-block-pro';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';

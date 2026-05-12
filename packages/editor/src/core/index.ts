@@ -1,4 +1,4 @@
-export { createEditorExtensions } from './createEditorExtensions';
+export { createEditorExtensions } from './extensions';
 export {
     createEmptyEditorContent,
     exportEditorContent,
@@ -12,7 +12,7 @@ export {
     createNormalizeOptions,
     isEditorJson,
     normalizeEditorJson,
-} from './documentModel';
+} from './model';
 export type {
     ExportEditorContentOptions,
     ImportEditorContentOptions,
@@ -24,10 +24,9 @@ export type {
     EditorAttributeSanitizerContext,
     EditorAttributeSanitizerResult,
     EditorAttributeSanitizers,
-} from './documentModel';
+} from './model';
 export { deepMerge } from './deepMerge';
-export { createLowlightRegistry, createLowlight } from './highlight';
-export { IframeEmbed } from './iframe';
+export { createLowlightRegistry, createLowlight, IframeEmbed } from './extensions';
 export {
     BG_HEX_TO_CSS_VAR,
     BG_PALETTE,
@@ -36,7 +35,7 @@ export {
     TEXT_PALETTE,
 } from './palette';
 export type { PaletteColor } from './palette';
-export type { CreateEditorExtensionsOptions, EditorFeatureFlags } from './createEditorExtensions';
-export type { EditorHighlightLanguage, EditorLowlightRegistry } from './highlight';
-export type { IframeExtensionOptions, SetIframeEmbedOptions } from './iframe';
+export type { CreateEditorExtensionsOptions, EditorFeatureFlags } from './extensions';
+export type { EditorHighlightLanguage, EditorLowlightRegistry } from './extensions';
+export type { IframeExtensionOptions, SetIframeEmbedOptions } from './extensions';
 export type { EditorFormat, EditorValue } from './types';

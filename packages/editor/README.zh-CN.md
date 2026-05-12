@@ -48,8 +48,9 @@ import '@namelesserlx/editor/style.css';
 ## 🚀 基本用法
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
-import { createEmptyDocument } from '@namelesserlx/editor/core';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
+import { createEmptyDocument } from '@namelesserlx/editor/core/model';
 import '@namelesserlx/editor/style.css';
 
 const controller = useEditorController({
@@ -111,10 +112,6 @@ export function ArticleBody({ content }: { content: unknown }) {
 }
 ```
 
-`@namelesserlx/editor/react` 也会为了方便而导出这些只读 API，但如果你更在意 bundle 边界，推荐优先使用 `/readonly`。
-
----
-
 ## 🔄 HTML / Markdown 支持
 
 `@namelesserlx/editor` 是 **JSON-first** 的。Tiptap JSON 是唯一无损的内部格式；HTML 和 Markdown 只是导入 / 导出格式。
@@ -147,7 +144,8 @@ const html = exportEditorContent(json, {
 自定义 extensions 应该从应用级 peer runtime 解析同一组 `@tiptap/core` 与 `@tiptap/pm`。这样 editing、只读渲染、导入导出路径里的 extension 实例、schema、commands 和 ProseMirror state class 才能保持一致。
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
 import { CodeBlockPro } from '@tiptap-codeless/extension-code-block-pro';
 import { FileUpload } from '@tiptap-codeless/extension-file-upload';
 
@@ -259,17 +257,25 @@ export function App() {
 
 ---
 
-## 📚 包入口
+## 📚 公开 API
 
-- `@namelesserlx/editor` - 顶层便捷导出
-- `@namelesserlx/editor/react` - 编辑器组件、controller hook、只读 API 便捷导出
-- `@namelesserlx/editor/readonly` - 不带编辑入口的安全 HTML 生成和只读渲染 API
-- `@namelesserlx/editor/core` - 内容工具和 extension 工厂
-- `@namelesserlx/editor/format` - HTML / Markdown 转换工具
-- `@namelesserlx/editor/security` - HTML 和 URL 安全辅助工具
-- `@namelesserlx/editor/i18n` - 语言常量和消息解析能力
-- `@namelesserlx/editor/ui` - 可选默认 UI 基础能力
-- `@namelesserlx/editor/style.css` - 默认样式
+这个包只暴露文档中列出的公开入口。业务代码优先使用明确子路径；如果你想最短路径接入完整编辑器，可以使用 `/react`。
+
+| 入口                                    | 公开 API                                                                                                | 适用场景                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `@namelesserlx/editor/react`            | `Editor`、`EditorRoot`、`useEditorController`                                                           | 想用最短路径接入完整编辑器                     |
+| `@namelesserlx/editor/react/controller` | `useEditorController`；`EditorController`、`EditorUpdateMeta`、`UseEditorControllerOptions` 类型        | 只需要 controller hook，不希望引入默认 UI 图谱 |
+| `@namelesserlx/editor/react/editor`     | `Editor`、`EditorRoot`；`EditorProps`、`AnyEditorProps` 类型                                            | 只需要 React 编辑器组件                        |
+| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`、`ReadonlyHtml`、`ReadonlyRenderer`；只读渲染相关类型                              | 内容页、SSR、预览或缓存展示 HTML               |
+| `@namelesserlx/editor/core/model`       | `createEmptyDocument`、`createNormalizeOptions`、`isEditorJson`、`normalizeEditorJson`；模型相关类型    | 只需要 JSON 文档模型工具                       |
+| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`、`createLowlight`、`createLowlightRegistry`、`IframeEmbed`；extension 配置类型 | 配置或复用内置 Tiptap extension 栈             |
+| `@namelesserlx/editor/core`             | 内容工具，以及 model / extensions 能力                                                                  | 需要完整 core 能力                             |
+| `@namelesserlx/editor/format`           | `importContent`、`exportContent`、`importHtml`、`exportHtml`、`importMarkdown`、`exportMarkdown`        | 直接做 HTML / Markdown / JSON 转换             |
+| `@namelesserlx/editor/security`         | `sanitizeHtml`、`sanitizeUrl`；安全策略类型                                                             | 需要 HTML 或 URL 安全辅助能力                  |
+| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`、`SUPPORTED_EDITOR_LOCALES`；locale 类型                                        | 需要支持语言元信息                             |
+| `@namelesserlx/editor/ui`               | `BubbleMenuSelect` 等默认 UI primitives                                                                 | 组合内置 UI 组件                               |
+| `@namelesserlx/editor`                  | core、format、i18n、security 的轻量顶层便捷导出                                                         | 推荐优先使用子路径来获得可预测 bundle          |
+| `@namelesserlx/editor/style.css`        | 默认 CSS                                                                                                | 使用内置编辑器或只读样式                       |
 
 ---
 

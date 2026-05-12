@@ -48,8 +48,9 @@ import '@namelesserlx/editor/style.css';
 ## 🚀 Basic Usage
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
-import { createEmptyDocument } from '@namelesserlx/editor/core';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
+import { createEmptyDocument } from '@namelesserlx/editor/core/model';
 import '@namelesserlx/editor/style.css';
 
 const controller = useEditorController({
@@ -111,10 +112,6 @@ export function ArticleBody({ content }: { content: unknown }) {
 }
 ```
 
-`@namelesserlx/editor/react` also re-exports these readonly APIs for convenience, but `/readonly` is the preferred display-focused entry when bundle boundaries matter.
-
----
-
 ## 🔄 HTML / Markdown Support
 
 `@namelesserlx/editor` is **JSON-first**. Tiptap JSON is the only lossless internal format; HTML and Markdown are import / export formats.
@@ -147,7 +144,8 @@ Business-specific extensions belong in the consuming app. Pass them through `ext
 Custom extensions should resolve `@tiptap/core` and `@tiptap/pm` from the app-level peer runtime. This keeps extension instances, schema objects, commands, and ProseMirror state classes compatible across editing, readonly rendering, and import/export.
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
 import { CodeBlockPro } from '@tiptap-codeless/extension-code-block-pro';
 import { FileUpload } from '@tiptap-codeless/extension-file-upload';
 
@@ -259,17 +257,25 @@ This package does **not** replace server-side validation, upload security, or bu
 
 ---
 
-## 📚 Package Entry Points
+## 📚 Public API
 
-- `@namelesserlx/editor` - top-level convenience exports
-- `@namelesserlx/editor/react` - editor component, controller hook, convenience readonly API exports
-- `@namelesserlx/editor/readonly` - safe HTML generation and readonly rendering without the editing entry
-- `@namelesserlx/editor/core` - content helpers and extension factory
-- `@namelesserlx/editor/format` - HTML / Markdown conversion helpers
-- `@namelesserlx/editor/security` - HTML and URL safety helpers
-- `@namelesserlx/editor/i18n` - locale constants and message resolver
-- `@namelesserlx/editor/ui` - optional default UI primitives
-- `@namelesserlx/editor/style.css` - default styles
+The package exposes only documented entry points. Prefer focused subpaths for app code; use `/react` when you want the shortest full-editor import.
+
+| Entry point                             | Public API                                                                                                  | Use when                                                        |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `@namelesserlx/editor/react`            | `Editor`, `EditorRoot`, `useEditorController`                                                               | You want the quickest full editor import                        |
+| `@namelesserlx/editor/react/controller` | `useEditorController`; `EditorController`, `EditorUpdateMeta`, `UseEditorControllerOptions` types           | You need the controller hook without importing default UI       |
+| `@namelesserlx/editor/react/editor`     | `Editor`, `EditorRoot`; `EditorProps`, `AnyEditorProps` types                                               | You need the React editor component                             |
+| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`, `ReadonlyHtml`, `ReadonlyRenderer`; readonly option/prop types                        | You render content pages, SSR, previews, or cached display HTML |
+| `@namelesserlx/editor/core/model`       | `createEmptyDocument`, `createNormalizeOptions`, `isEditorJson`, `normalizeEditorJson`; model-related types | You only need JSON document model helpers                       |
+| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`, `createLowlight`, `createLowlightRegistry`, `IframeEmbed`; extension option types | You configure or share the built-in Tiptap extension stack      |
+| `@namelesserlx/editor/core`             | Content helpers plus model and extension APIs                                                               | You need the complete core surface                              |
+| `@namelesserlx/editor/format`           | `importContent`, `exportContent`, `importHtml`, `exportHtml`, `importMarkdown`, `exportMarkdown`            | You convert HTML / Markdown / JSON directly                     |
+| `@namelesserlx/editor/security`         | `sanitizeHtml`, `sanitizeUrl`; policy types                                                                 | You need URL or HTML safety helpers                             |
+| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`, `SUPPORTED_EDITOR_LOCALES`; locale types                                           | You need supported locale metadata                              |
+| `@namelesserlx/editor/ui`               | Default UI primitives such as `BubbleMenuSelect`                                                            | You compose with the built-in UI pieces                         |
+| `@namelesserlx/editor`                  | Lightweight top-level convenience exports from core, format, i18n, and security                             | Prefer subpaths for predictable bundles                         |
+| `@namelesserlx/editor/style.css`        | Default CSS                                                                                                 | You use the built-in editor or readonly styles                  |
 
 ---
 

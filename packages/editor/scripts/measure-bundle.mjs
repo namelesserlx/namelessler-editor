@@ -7,7 +7,11 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const dist = join(root, 'dist');
 
 const ENTRY_BUDGETS = {
+    'core/extensions.js': 1 * 1024,
     'index.js': 8 * 1024,
+    'core/model.js': 1 * 1024,
+    'react/controller.js': 1 * 1024,
+    'react/editor.js': 1 * 1024,
     'react/index.js': 3 * 1024,
     'readonly/index.js': 2 * 1024,
     'format/index.js': 8 * 1024,
@@ -88,14 +92,49 @@ if (totalJsGzip > TOTAL_JS_GZIP_BUDGET) {
     );
 }
 
-const readonlyGraph = [...collectLocalImportGraph('readonly/index.js')];
-const readonlySource = readonlyGraph.map((file) => readDistFile(file).toString('utf8')).join('\n');
+const graphChecks = [
+    {
+        label: '/readonly',
+        entry: 'readonly/index.js',
+        forbidden: ['@tiptap/react', 'lucide-react', 'DefaultToolbar', 'SlashMenu'],
+    },
+    {
+        label: '/react/controller',
+        entry: 'react/controller.js',
+        forbidden: [
+            'DefaultEditorUi',
+            'DefaultToolbar',
+            'BubbleMenu',
+            'EditorContent',
+            'lucide-react',
+        ],
+    },
+    {
+        label: '/core/model',
+        entry: 'core/model.js',
+        forbidden: [
+            '@tiptap/react',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-code-block-lowlight',
+            'DefaultEditorUi',
+            'lowlight',
+            'lucide-react',
+        ],
+    },
+];
 
-for (const forbidden of ['@tiptap/react', 'lucide-react', 'DefaultToolbar', 'SlashMenu']) {
-    if (readonlySource.includes(forbidden)) {
-        failures.push(`/readonly import graph contains editing UI dependency: ${forbidden}`);
+const graphRows = graphChecks.map(({ label, entry, forbidden }) => {
+    const graph = [...collectLocalImportGraph(entry)];
+    const source = graph.map((file) => readDistFile(file).toString('utf8')).join('\n');
+
+    for (const forbiddenText of forbidden) {
+        if (source.includes(forbiddenText)) {
+            failures.push(`${label} import graph contains forbidden dependency: ${forbiddenText}`);
+        }
     }
-}
+
+    return { label, graph };
+});
 
 console.table(
     rows.map(({ entry, size, budget }) => ({
@@ -105,7 +144,9 @@ console.table(
     })),
 );
 console.log(`total JS gzip: ${formatBytes(totalJsGzip)} / ${formatBytes(TOTAL_JS_GZIP_BUDGET)}`);
-console.log(`readonly graph: ${readonlyGraph.join(', ')}`);
+graphRows.forEach(({ label, graph }) => {
+    console.log(`${label} graph: ${graph.join(', ')}`);
+});
 
 if (failures.length > 0) {
     console.error(failures.map((failure) => `- ${failure}`).join('\n'));

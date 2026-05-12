@@ -51,8 +51,9 @@ pnpm add @namelesserlx/editor react react-dom
 ## 🚀 Quick Start
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
-import { createEmptyDocument } from '@namelesserlx/editor/core';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
+import { createEmptyDocument } from '@namelesserlx/editor/core/model';
 import '@namelesserlx/editor/style.css';
 
 const controller = useEditorController({

@@ -15,9 +15,13 @@ const externalPackages = new Set<string>([
 
 const entries = {
     index: resolve(__dirname, 'src/index.ts'),
+    'core/extensions': resolve(__dirname, 'src/core/extensions.ts'),
     'core/index': resolve(__dirname, 'src/core/index.ts'),
+    'core/model': resolve(__dirname, 'src/core/model.ts'),
     'format/index': resolve(__dirname, 'src/format/index.ts'),
     'i18n/index': resolve(__dirname, 'src/i18n/index.ts'),
+    'react/controller': resolve(__dirname, 'src/react/controller.ts'),
+    'react/editor': resolve(__dirname, 'src/react/editor.ts'),
     'react/index': resolve(__dirname, 'src/react/index.ts'),
     'readonly/index': resolve(__dirname, 'src/readonly/index.ts'),
     'security/index': resolve(__dirname, 'src/security/index.ts'),

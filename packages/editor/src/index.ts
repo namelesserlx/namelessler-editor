@@ -54,35 +54,5 @@ export type {
 } from './format';
 export { DEFAULT_EDITOR_LOCALE, SUPPORTED_EDITOR_LOCALES } from './i18n';
 export type { EditorLocale } from './i18n';
-export {
-    Editor,
-    EditorRoot,
-    ReadonlyHtml,
-    ReadonlyRenderer,
-    default,
-    renderReadonlyHtml,
-    useEditorController,
-} from './react';
-export type {
-    AnyEditorProps,
-    EditorController,
-    EditorProps,
-    EditorUpdateMeta,
-    UseEditorControllerOptions,
-} from './react';
-export type {
-    EditorBubbleMenuCustomSection,
-    EditorBubbleMenuConfig,
-    EditorBubbleMenuOptions,
-    EditorBubbleMenuShouldShow,
-    EditorBubbleMenuShouldShowContext,
-    EditorUiConfig,
-    EditorUiOptions,
-} from './ui';
-export type {
-    ReadonlyHtmlProps,
-    ReadonlyRendererProps,
-    RenderReadonlyHtmlOptions,
-} from './readonly';
 export { sanitizeHtml, sanitizeUrl } from './security';
 export type { HtmlIframePolicy, HtmlPolicy, UrlPolicy } from './security';

@@ -22,12 +22,6 @@ import '@namelesserlx/editor/style.css';
 <ReadonlyRenderer content={articleJson} contentFormat="json" />;
 ```
 
-The React entry also re-exports these APIs for convenience:
-
-```tsx
-import { ReadonlyRenderer, renderReadonlyHtml } from '@namelesserlx/editor/react';
-```
-
 Use `/readonly` for public article pages and other display-only surfaces. It avoids importing editing UI, toolbar controls, and editing handlers.
 
 ## Supported Input

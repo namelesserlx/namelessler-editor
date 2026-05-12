@@ -2,13 +2,9 @@ import type { Editor as TiptapEditor } from '@tiptap/react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-    Editor,
-    ReadonlyRenderer,
-    useEditorController,
-    type EditorController,
-} from '../../src/react';
+import { Editor, useEditorController, type EditorController } from '../../src/react';
 import { createEmptyDocument } from '../../src/core';
+import { ReadonlyRenderer } from '../../src/readonly';
 
 function nextFrame(): Promise<void> {
     return new Promise((resolve) => {
@@ -204,7 +200,7 @@ describe('controller editor API', () => {
         );
     });
 
-    it('re-exports ReadonlyRenderer from the react entry', () => {
+    it('renders readonly content from the readonly entry', () => {
         act(() => {
             root.render(
                 <ReadonlyRenderer

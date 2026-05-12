@@ -16,6 +16,9 @@
     /* Path alias */
     "paths": {
       "@namelesserlx/editor": ["../../packages/editor/src/index.ts"],
+      "@namelesserlx/editor/format": ["../../packages/editor/src/format/index.ts"],
+      "@namelesserlx/editor/react/controller": ["../../packages/editor/src/react/controller.ts"],
+      "@namelesserlx/editor/react/editor": ["../../packages/editor/src/react/editor.ts"],
       "@namelesserlx/editor/ui": ["../../packages/editor/src/ui/index.ts"],
       "@/*": ["./src/*"]
     },

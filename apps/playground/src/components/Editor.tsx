@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Editor as TiptapEditor } from '@tiptap/react';
-import { useEditorController, Editor as EditorComponent } from '@namelesserlx/editor';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor as EditorComponent } from '@namelesserlx/editor/react/editor';
 import { BubbleMenuSelect } from '@namelesserlx/editor/ui';
 import '@namelesserlx/editor/style.css';
 import { createLowlight } from 'lowlight';

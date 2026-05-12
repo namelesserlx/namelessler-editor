@@ -15,11 +15,12 @@ The package does not treat Markdown or HTML as lossless storage formats. Store J
 ## React Editor Defaults
 
 ```tsx
-import { Editor, useEditorController } from '@namelesserlx/editor/react';
-import { createEmptyEditorContent } from '@namelesserlx/editor/core';
+import { useEditorController } from '@namelesserlx/editor/react/controller';
+import { Editor } from '@namelesserlx/editor/react/editor';
+import { createEmptyDocument } from '@namelesserlx/editor/core/model';
 
 const editor = useEditorController({
-  defaultContent: createEmptyEditorContent(),
+  defaultContent: createEmptyDocument(),
   contentFormat: 'json',
 });
 
