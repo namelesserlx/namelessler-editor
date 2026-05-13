@@ -90,8 +90,110 @@ export interface NormalizeEditorJsonOptions {
     attributeSanitizers?: EditorAttributeSanitizers;
 }
 
+export type EditorContentWarningCode =
+    | 'INVALID_DOCUMENT'
+    | 'UNSUPPORTED_NODE'
+    | 'UNSUPPORTED_MARK'
+    | 'DROPPED_ATTRIBUTE'
+    | 'SANITIZED_ATTRIBUTE'
+    | 'SANITIZED_HTML'
+    | 'LOSSY_MARKDOWN_EXPORT';
+
+export interface EditorContentWarning {
+    code: EditorContentWarningCode;
+    message: string;
+    path?: Array<string | number>;
+}
+
+export interface NormalizeEditorJsonResult {
+    value: JSONContent;
+    warnings: EditorContentWarning[];
+    lossy: boolean;
+}
+
+type JsonPath = Array<string | number>;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOwn(record: Record<string, unknown>, key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+function isJsonValueEqual(left: unknown, right: unknown): boolean {
+    if (Object.is(left, right)) {
+        return true;
+    }
+
+    if (Array.isArray(left) || Array.isArray(right)) {
+        if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+            return false;
+        }
+
+        return left.every((item, index) => isJsonValueEqual(item, right[index]));
+    }
+
+    if (isRecord(left) || isRecord(right)) {
+        if (!isRecord(left) || !isRecord(right)) {
+            return false;
+        }
+
+        const leftKeys = Object.keys(left);
+        const rightKeys = Object.keys(right);
+        if (leftKeys.length !== rightKeys.length) {
+            return false;
+        }
+
+        return leftKeys.every(
+            (key) => hasOwn(right, key) && isJsonValueEqual(left[key], right[key]),
+        );
+    }
+
+    return false;
+}
+
+function pushWarning(warnings: EditorContentWarning[], warning: EditorContentWarning): void {
+    warnings.push(warning);
+}
+
+function reportAttributeChanges(
+    warnings: EditorContentWarning[],
+    kind: 'node' | 'mark',
+    type: string,
+    originalAttrs: unknown,
+    safeAttrs: Record<string, unknown> | undefined,
+    path: JsonPath,
+): void {
+    if (!isRecord(originalAttrs)) {
+        return;
+    }
+
+    const safe = safeAttrs ?? {};
+
+    Object.entries(originalAttrs).forEach(([key, value]) => {
+        const attributePath = [...path, 'attrs', key];
+        if (!hasOwn(safe, key)) {
+            if (value == null) {
+                return;
+            }
+
+            pushWarning(warnings, {
+                code: 'DROPPED_ATTRIBUTE',
+                message: `${kind === 'node' ? 'Node' : 'Mark'} "${type}" attribute "${key}" was dropped during normalization.`,
+                path: attributePath,
+            });
+            return;
+        }
+
+        if (!isJsonValueEqual(value, safe[key])) {
+            pushWarning(warnings, {
+                code: 'SANITIZED_ATTRIBUTE',
+                message: `${kind === 'node' ? 'Node' : 'Mark'} "${type}" attribute "${key}" was sanitized during normalization.`,
+                path: attributePath,
+            });
+        }
+    });
 }
 
 function sanitizeUrlAttr(value: unknown, policy: UrlPolicy): string | undefined {
@@ -327,7 +429,7 @@ function sanitizeNodeAttrs(
     type: string,
     attrs: unknown,
     options?: NormalizeEditorJsonOptions,
-): Record<string, unknown> | null | undefined {
+): Record<string, unknown> | undefined {
     if (!isRecord(attrs)) {
         return undefined;
     }
@@ -408,46 +510,117 @@ function sanitizeNodeAttrs(
 type EditorJsonMark = NonNullable<JSONContent['marks']>[number];
 type EditorJsonContent = NonNullable<JSONContent['content']>;
 
-function sanitizeMark(mark: unknown, options?: NormalizeEditorJsonOptions): EditorJsonMark | null {
+function mergeAttrs(
+    baseAttrs: Record<string, unknown> | undefined,
+    customAttrs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+    const merged = {
+        ...(baseAttrs ?? {}),
+        ...(customAttrs ?? {}),
+    };
+
+    return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function sanitizeLinkAttrs(
+    attrs: Record<string, unknown> | undefined,
+): Record<string, unknown> | null {
+    if (!attrs) {
+        return null;
+    }
+
+    const href = sanitizeUrlAttr(attrs.href, LINK_URL_POLICY);
+    if (!href) {
+        return null;
+    }
+
+    const safeAttrs: Record<string, unknown> = {
+        ...attrs,
+        href,
+    };
+
+    const title = pickString(attrs, 'title');
+    const target = pickString(attrs, 'target');
+    const rel = pickString(attrs, 'rel');
+
+    if (title) {
+        safeAttrs.title = title;
+    } else {
+        delete safeAttrs.title;
+    }
+
+    if (target && ['_blank', '_self', '_parent', '_top'].includes(target)) {
+        safeAttrs.target = target;
+    } else {
+        delete safeAttrs.target;
+    }
+
+    if (rel) {
+        safeAttrs.rel = rel;
+    } else {
+        delete safeAttrs.rel;
+    }
+
+    return safeAttrs;
+}
+
+function sanitizeColorMarkAttrs(
+    attrs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+    if (!attrs) {
+        return undefined;
+    }
+
+    const safeAttrs = { ...attrs };
+    if ('color' in safeAttrs && typeof safeAttrs.color !== 'string') {
+        delete safeAttrs.color;
+    }
+
+    return Object.keys(safeAttrs).length > 0 ? safeAttrs : undefined;
+}
+
+function sanitizeMark(
+    mark: unknown,
+    options: NormalizeEditorJsonOptions | undefined,
+    warnings: EditorContentWarning[],
+    path: JsonPath,
+): EditorJsonMark | null {
     if (!isRecord(mark) || typeof mark.type !== 'string') {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_MARK',
+            message: 'A mark without a valid type was dropped during normalization.',
+            path,
+        });
         return null;
     }
 
     const isCustomMark = isAllowedCustomType(mark.type, options?.customMarkTypes);
     const isConfiguredMark = isAllowedType(mark.type, options?.allowedMarkTypes, ALLOWED_MARKS);
     if (!isConfiguredMark && !isCustomMark) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_MARK',
+            message: `Mark "${mark.type}" is not enabled in the current schema.`,
+            path,
+        });
         return null;
     }
 
     const safeMark: EditorJsonMark = { type: mark.type };
-
-    if (isCustomMark) {
-        const customAttrs = sanitizeAttributesWithCustomPolicy(
-            'mark',
-            mark.type,
-            mark.attrs,
-            options,
-        );
-        if (customAttrs === null) {
-            return null;
-        }
-
-        const attrs = customAttrs ?? sanitizeGenericAttrs(mark.attrs);
-        if (attrs) {
-            safeMark.attrs = attrs;
-        }
-
-        return safeMark;
-    }
+    let baseAttrs: Record<string, unknown> | undefined;
 
     if (mark.type === 'link') {
         const attrs = isRecord(mark.attrs) ? mark.attrs : {};
         const href = sanitizeUrlAttr(attrs.href, LINK_URL_POLICY);
         if (!href) {
+            pushWarning(warnings, {
+                code: 'UNSUPPORTED_MARK',
+                message: 'Mark "link" was dropped because it did not contain a safe href.',
+                path,
+            });
             return null;
         }
 
-        safeMark.attrs = {
+        baseAttrs = {
             href,
         };
 
@@ -455,18 +628,18 @@ function sanitizeMark(mark: unknown, options?: NormalizeEditorJsonOptions): Edit
         const target = pickString(attrs, 'target');
         const rel = pickString(attrs, 'rel');
 
-        if (title) safeMark.attrs.title = title;
+        if (title) baseAttrs.title = title;
         if (target && ['_blank', '_self', '_parent', '_top'].includes(target)) {
-            safeMark.attrs.target = target;
+            baseAttrs.target = target;
         }
-        if (rel) safeMark.attrs.rel = rel;
+        if (rel) baseAttrs.rel = rel;
     }
 
     if (mark.type === 'highlight') {
         const attrs = isRecord(mark.attrs) ? mark.attrs : {};
         const color = pickString(attrs, 'color');
         if (color) {
-            safeMark.attrs = { color };
+            baseAttrs = { color };
         }
     }
 
@@ -474,8 +647,46 @@ function sanitizeMark(mark: unknown, options?: NormalizeEditorJsonOptions): Edit
         const attrs = isRecord(mark.attrs) ? mark.attrs : {};
         const color = pickString(attrs, 'color');
         if (color) {
-            safeMark.attrs = { color };
+            baseAttrs = { color };
         }
+    }
+
+    if (isCustomMark && !baseAttrs) {
+        baseAttrs = sanitizeGenericAttrs(mark.attrs);
+    }
+
+    const customAttrs = sanitizeAttributesWithCustomPolicy('mark', mark.type, mark.attrs, options);
+    if (customAttrs === null) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_MARK',
+            message: `Mark "${mark.type}" was dropped by its attribute sanitizer.`,
+            path,
+        });
+        return null;
+    }
+
+    let attrs = mergeAttrs(baseAttrs, customAttrs ?? undefined);
+
+    if (mark.type === 'link') {
+        attrs = sanitizeLinkAttrs(attrs) ?? undefined;
+        if (!attrs) {
+            pushWarning(warnings, {
+                code: 'UNSUPPORTED_MARK',
+                message: 'Mark "link" was dropped because it did not contain a safe href.',
+                path,
+            });
+            return null;
+        }
+    }
+
+    if (mark.type === 'highlight' || mark.type === 'textStyle') {
+        attrs = sanitizeColorMarkAttrs(attrs);
+    }
+
+    reportAttributeChanges(warnings, 'mark', mark.type, mark.attrs, attrs, path);
+
+    if (attrs) {
+        safeMark.attrs = attrs;
     }
 
     return safeMark;
@@ -483,24 +694,150 @@ function sanitizeMark(mark: unknown, options?: NormalizeEditorJsonOptions): Edit
 
 function sanitizeMarks(
     marks: unknown,
-    options?: NormalizeEditorJsonOptions,
+    options: NormalizeEditorJsonOptions | undefined,
+    warnings: EditorContentWarning[],
+    path: JsonPath,
 ): EditorJsonMark[] | undefined {
     if (!Array.isArray(marks)) {
         return undefined;
     }
 
     const safeMarks = marks
-        .map((mark) => sanitizeMark(mark, options))
+        .map((mark, index) => sanitizeMark(mark, options, warnings, [...path, index]))
         .filter((mark): mark is EditorJsonMark => mark !== null);
 
     return safeMarks.length > 0 ? safeMarks : undefined;
 }
 
+function sanitizeImageAttrs(
+    attrs: Record<string, unknown> | undefined,
+): Record<string, unknown> | null {
+    if (!attrs) {
+        return null;
+    }
+
+    const src = sanitizeUrlAttr(attrs.src, MEDIA_URL_POLICY);
+    if (!src) {
+        return null;
+    }
+
+    const safeAttrs: Record<string, unknown> = {
+        ...attrs,
+        src,
+    };
+
+    const alt = pickString(attrs, 'alt');
+    const title = pickString(attrs, 'title');
+    const width = pickNumber(attrs, 'width');
+    const height = pickNumber(attrs, 'height');
+
+    if (alt) {
+        safeAttrs.alt = alt;
+    } else {
+        delete safeAttrs.alt;
+    }
+
+    if (title) {
+        safeAttrs.title = title;
+    } else {
+        delete safeAttrs.title;
+    }
+
+    if (width) {
+        safeAttrs.width = width;
+    } else {
+        delete safeAttrs.width;
+    }
+
+    if (height) {
+        safeAttrs.height = height;
+    } else {
+        delete safeAttrs.height;
+    }
+
+    return safeAttrs;
+}
+
+function sanitizeIframeAttrs(
+    attrs: Record<string, unknown> | undefined,
+    options: NormalizeEditorJsonOptions | undefined,
+): Record<string, unknown> | null {
+    if (
+        !attrs ||
+        typeof attrs.src !== 'string' ||
+        !isAllowedIframeSrc(attrs.src, options?.iframe)
+    ) {
+        return null;
+    }
+
+    const src = sanitizeUrl(attrs.src, IFRAME_URL_POLICY);
+    if (!src) {
+        return null;
+    }
+
+    const safeAttrs: Record<string, unknown> = {
+        ...attrs,
+        src,
+    };
+
+    const title = pickString(attrs, 'title');
+    const allow = pickString(attrs, 'allow');
+    const loading = pickString(attrs, 'loading');
+
+    if (title) {
+        safeAttrs.title = title;
+    } else {
+        delete safeAttrs.title;
+    }
+
+    if (allow) {
+        safeAttrs.allow = allow;
+    } else {
+        delete safeAttrs.allow;
+    }
+
+    if (loading && ['lazy', 'eager'].includes(loading)) {
+        safeAttrs.loading = loading;
+    } else {
+        delete safeAttrs.loading;
+    }
+
+    if (typeof attrs.allowfullscreen === 'boolean') {
+        safeAttrs.allowfullscreen = attrs.allowfullscreen;
+    } else {
+        delete safeAttrs.allowfullscreen;
+    }
+
+    return safeAttrs;
+}
+
+function sanitizeTaskItemAttrs(
+    attrs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+    if (!attrs) {
+        return undefined;
+    }
+
+    const safeAttrs = { ...attrs };
+    if ('checked' in safeAttrs && typeof safeAttrs.checked !== 'boolean') {
+        delete safeAttrs.checked;
+    }
+
+    return Object.keys(safeAttrs).length > 0 ? safeAttrs : undefined;
+}
+
 function normalizeNode(
     value: unknown,
-    options?: NormalizeEditorJsonOptions,
+    options: NormalizeEditorJsonOptions | undefined,
+    warnings: EditorContentWarning[],
+    path: JsonPath,
 ): EditorJsonContent[number] | null {
     if (!isRecord(value) || typeof value.type !== 'string') {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_NODE',
+            message: 'A node without a valid type was dropped during normalization.',
+            path,
+        });
         return null;
     }
 
@@ -508,15 +845,30 @@ function normalizeNode(
     const isIframeNode = value.type === 'iframe' && options?.iframe?.enabled;
     const isConfiguredNode = isAllowedType(value.type, options?.allowedNodeTypes, ALLOWED_NODES);
     if (!isConfiguredNode && !isCustomNode && !isIframeNode) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_NODE',
+            message: `Node "${value.type}" is not enabled in the current schema.`,
+            path,
+        });
         return null;
     }
 
     if (value.type === 'iframe' && !isIframeNode && !isCustomNode) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_NODE',
+            message: 'Node "iframe" was dropped because iframe support is disabled.',
+            path,
+        });
         return null;
     }
 
     if (value.type === 'text') {
         if (typeof value.text !== 'string') {
+            pushWarning(warnings, {
+                code: 'UNSUPPORTED_NODE',
+                message: 'Text node was dropped because its text value was invalid.',
+                path,
+            });
             return null;
         }
 
@@ -524,7 +876,7 @@ function normalizeNode(
             type: 'text',
             text: value.text,
         };
-        const marks = sanitizeMarks(value.marks, options);
+        const marks = sanitizeMarks(value.marks, options, warnings, [...path, 'marks']);
         if (marks) {
             textNode.marks = marks;
         }
@@ -534,36 +886,74 @@ function normalizeNode(
 
     const node: EditorJsonContent[number] = { type: value.type };
 
-    const customAttrs = isCustomNode
-        ? sanitizeAttributesWithCustomPolicy('node', value.type, value.attrs, options)
-        : undefined;
+    const customAttrs = sanitizeAttributesWithCustomPolicy(
+        'node',
+        value.type,
+        value.attrs,
+        options,
+    );
     if (customAttrs === null) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_NODE',
+            message: `Node "${value.type}" was dropped by its attribute sanitizer.`,
+            path,
+        });
         return null;
     }
 
-    const attrs = isCustomNode
-        ? (customAttrs ?? sanitizeGenericAttrs(value.attrs))
+    const baseAttrs = isCustomNode
+        ? sanitizeGenericAttrs(value.attrs)
         : sanitizeNodeAttrs(value.type, value.attrs, options);
-    if (attrs === null) {
-        return null;
-    }
+    let attrs = mergeAttrs(baseAttrs ?? undefined, customAttrs ?? undefined);
+
     if (isCustomNode && hasGenericUrlAttrs(value.attrs) && !hasSafeGenericUrlAttrs(attrs)) {
-        return null;
-    }
-    if (value.type === 'image' && !attrs?.src) {
+        pushWarning(warnings, {
+            code: 'UNSUPPORTED_NODE',
+            message: `Node "${value.type}" was dropped because it did not contain any safe URL attributes.`,
+            path,
+        });
         return null;
     }
 
-    if (value.type === 'iframe' && !attrs?.src && !isCustomNode) {
-        return null;
+    if (value.type === 'image') {
+        attrs = sanitizeImageAttrs(attrs) ?? undefined;
+        if (!attrs) {
+            pushWarning(warnings, {
+                code: 'UNSUPPORTED_NODE',
+                message: 'Node "image" was dropped because it did not contain a safe src.',
+                path,
+            });
+            return null;
+        }
     }
+
+    if (value.type === 'iframe' && !isCustomNode) {
+        attrs = sanitizeIframeAttrs(attrs, options) ?? undefined;
+        if (!attrs) {
+            pushWarning(warnings, {
+                code: 'UNSUPPORTED_NODE',
+                message: 'Node "iframe" was dropped because it did not contain an allowed src.',
+                path,
+            });
+            return null;
+        }
+    }
+
+    if (value.type === 'taskItem') {
+        attrs = sanitizeTaskItemAttrs(attrs);
+    }
+
+    reportAttributeChanges(warnings, 'node', value.type, value.attrs, attrs, path);
+
     if (attrs) {
         node.attrs = attrs;
     }
 
     if (Array.isArray(value.content)) {
         const content = value.content
-            .map((child) => normalizeNode(child, options))
+            .map((child, index) =>
+                normalizeNode(child, options, warnings, [...path, 'content', index]),
+            )
             .filter((child): child is JSONContent => child !== null);
 
         if (content.length > 0) {
@@ -590,14 +980,51 @@ export function normalizeEditorJson(
     value: unknown,
     options?: NormalizeEditorJsonOptions,
 ): JSONContent {
+    return normalizeEditorJsonWithReport(value, options).value;
+}
+
+export function normalizeEditorJsonWithReport(
+    value: unknown,
+    options?: NormalizeEditorJsonOptions,
+): NormalizeEditorJsonResult {
+    const warnings: EditorContentWarning[] = [];
+
     if (!isEditorJson(value)) {
-        return createEmptyDocument();
+        pushWarning(warnings, {
+            code: 'INVALID_DOCUMENT',
+            message:
+                'Input was replaced with an empty editor document because it was not valid TipTap JSON.',
+            path: [],
+        });
+
+        return {
+            value: createEmptyDocument(),
+            warnings,
+            lossy: true,
+        };
     }
 
-    const normalized = normalizeNode(value, options);
+    const normalized = normalizeNode(value, options, warnings, []);
     if (!normalized || normalized.type !== 'doc' || !normalized.content?.length) {
-        return createEmptyDocument();
+        if (warnings.length === 0) {
+            pushWarning(warnings, {
+                code: 'INVALID_DOCUMENT',
+                message:
+                    'Input was replaced with an empty editor document because it did not contain supported content.',
+                path: [],
+            });
+        }
+
+        return {
+            value: createEmptyDocument(),
+            warnings,
+            lossy: warnings.length > 0,
+        };
     }
 
-    return normalized;
+    return {
+        value: normalized,
+        warnings,
+        lossy: warnings.length > 0,
+    };
 }

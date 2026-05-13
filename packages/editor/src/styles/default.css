@@ -29,6 +29,14 @@
     box-shadow: var(--nlx-focus-ring);
 }
 
+[data-nameless-editor-content='true'] .is-empty::before {
+    color: var(--nlx-color-text-muted);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
 /* ===== Typography ===== */
 
 [data-nameless-editor-content='true'] h1,

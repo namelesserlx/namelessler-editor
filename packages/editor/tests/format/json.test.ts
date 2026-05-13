@@ -1,11 +1,12 @@
 import { Node } from '@tiptap/core';
 import { describe, expect, it } from 'vitest';
-import { importContent } from '../../src/format';
+import { exportContent, importContent } from '../../src/format';
 import {
     createEmptyDocument,
     createNormalizeOptions,
     isEditorJson,
     normalizeEditorJson,
+    normalizeEditorJsonWithReport,
 } from '../../src/core/documentModel';
 
 const UploadFileCard = Node.create({
@@ -211,6 +212,19 @@ describe('documentModel', () => {
                 },
             ],
         });
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'UNSUPPORTED_MARK',
+                    path: ['content', 0, 'content', 0, 'marks', 0],
+                }),
+                expect.objectContaining({
+                    code: 'UNSUPPORTED_NODE',
+                    path: ['content', 1],
+                }),
+            ]),
+        );
     });
 
     it('applies custom attribute sanitizers to extension-owned nodes', () => {
@@ -299,5 +313,213 @@ describe('documentModel', () => {
                 },
             ],
         });
+    });
+
+    it('reports dropped and sanitized attributes while normalizing JSON in one pass', () => {
+        const result = normalizeEditorJsonWithReport({
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    attrs: {
+                        textAlign: 'center',
+                        onclick: 'alert(1)',
+                    },
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'safe',
+                            marks: [
+                                { type: 'bold' },
+                                { type: 'link', attrs: { href: 'example.com/docs' } },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(result.value).toEqual({
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    attrs: { textAlign: 'center' },
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'safe',
+                            marks: [
+                                { type: 'bold' },
+                                {
+                                    type: 'link',
+                                    attrs: { href: 'https://example.com/docs' },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        });
+        expect(result.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'DROPPED_ATTRIBUTE',
+                    path: ['content', 0, 'attrs', 'onclick'],
+                }),
+                expect.objectContaining({
+                    code: 'SANITIZED_ATTRIBUTE',
+                    path: ['content', 0, 'content', 0, 'marks', 1, 'attrs', 'href'],
+                }),
+            ]),
+        );
+    });
+
+    it('applies custom attribute sanitizers to built-in nodes and marks', () => {
+        const result = importContent(
+            {
+                type: 'doc',
+                content: [
+                    {
+                        type: 'paragraph',
+                        attrs: {
+                            textAlign: 'right',
+                            trackingId: 'intro',
+                            onclick: 'alert(1)',
+                        },
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'tracked',
+                                marks: [
+                                    {
+                                        type: 'link',
+                                        attrs: {
+                                            href: 'https://example.com',
+                                            title: 'Example',
+                                            trackingId: 'cta',
+                                            onclick: 'alert(1)',
+                                        },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                inputFormat: 'json',
+                attributeSanitizers: {
+                    nodes: {
+                        paragraph: (attrs) => ({
+                            trackingId:
+                                typeof attrs.trackingId === 'string' ? attrs.trackingId : undefined,
+                        }),
+                    },
+                    marks: {
+                        link: (attrs) => ({
+                            trackingId:
+                                typeof attrs.trackingId === 'string' ? attrs.trackingId : undefined,
+                        }),
+                    },
+                },
+            },
+        );
+
+        expect(result.value).toEqual({
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    attrs: { textAlign: 'right', trackingId: 'intro' },
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'tracked',
+                            marks: [
+                                {
+                                    type: 'link',
+                                    attrs: {
+                                        href: 'https://example.com',
+                                        title: 'Example',
+                                        trackingId: 'cta',
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        });
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'DROPPED_ATTRIBUTE',
+                    path: ['content', 0, 'attrs', 'onclick'],
+                }),
+                expect.objectContaining({
+                    code: 'DROPPED_ATTRIBUTE',
+                    path: ['content', 0, 'content', 0, 'marks', 0, 'attrs', 'onclick'],
+                }),
+            ]),
+        );
+    });
+
+    it('drops unsupported nodes by default when exporting JSON', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+                ],
+            },
+            { outputFormat: 'json' },
+        );
+
+        expect(result.value).toEqual({
+            type: 'doc',
+            content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+            ],
+        });
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'UNSUPPORTED_NODE',
+                    path: ['content', 1],
+                }),
+            ]),
+        );
+    });
+
+    it('can use placeholders for unsupported nodes when exporting JSON', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                ],
+            },
+            { outputFormat: 'json', unsupported: 'placeholder' },
+        );
+
+        expect(result.value).toEqual({
+            type: 'doc',
+            content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: '[Unsupported node: customWidget]' }],
+                },
+            ],
+        });
+        expect(result.stats.lossy).toBe(true);
     });
 });

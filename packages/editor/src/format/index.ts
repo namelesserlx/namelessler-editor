@@ -25,14 +25,20 @@ export function exportContent<Format extends EditorFormat>(
     options: ExportContentOptions<Format>,
 ): FormatResult<EditorValue<Format>> {
     if (options.outputFormat === 'json') {
-        return exportJson(doc, options) as FormatResult<EditorValue<Format>>;
+        return exportJson(doc, options as ExportContentOptions<'json'>) as FormatResult<
+            EditorValue<Format>
+        >;
     }
 
     if (options.outputFormat === 'html') {
-        return exportHtml(doc, options) as FormatResult<EditorValue<Format>>;
+        return exportHtml(doc, options as ExportContentOptions<'html'>) as FormatResult<
+            EditorValue<Format>
+        >;
     }
 
-    return exportMarkdown(doc, options) as FormatResult<EditorValue<Format>>;
+    return exportMarkdown(doc, options as ExportContentOptions<'markdown'>) as FormatResult<
+        EditorValue<Format>
+    >;
 }
 
 export { exportHtml, importHtml } from './html';
@@ -42,8 +48,10 @@ export type {
     ExportContentOptions,
     ExportContentValue,
     FormatConversionOptions,
+    FormatExportOptions,
     FormatResult,
     FormatWarning,
     ImportContentOptions,
     ImportContentValue,
+    UnsupportedContentStrategy,
 } from './types';

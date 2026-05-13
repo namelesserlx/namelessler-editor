@@ -1,7 +1,8 @@
-import type { Extensions } from '@tiptap/core';
+import { flattenExtensions, type Extensions } from '@tiptap/core';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
+import Placeholder, { type PlaceholderOptions } from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
@@ -30,6 +31,7 @@ type HighlightOptions = NonNullable<Parameters<typeof Highlight.configure>[0]>;
 type TextAlignOptions = NonNullable<Parameters<typeof TextAlign.configure>[0]>;
 type CodeBlockOptions = NonNullable<Parameters<typeof CodeBlockLowlight.configure>[0]>;
 type TableKitOptions = NonNullable<Parameters<typeof TableKit.configure>[0]>;
+export type EditorPlaceholderOptions = string | Partial<PlaceholderOptions>;
 
 export interface CreateEditorExtensionsOptions {
     features?: EditorFeatureFlags;
@@ -39,6 +41,7 @@ export interface CreateEditorExtensionsOptions {
     textAlign?: Partial<TextAlignOptions>;
     codeBlock?: Partial<CodeBlockOptions>;
     table?: Partial<TableKitOptions>;
+    placeholder?: EditorPlaceholderOptions;
     iframe?: IframeExtensionOptions;
     iframeExtensions?: Extensions;
     extraExtensions?: Extensions;
@@ -63,7 +66,30 @@ function isFeatureEnabled(
     return features?.[feature] ?? DEFAULT_FEATURES[feature];
 }
 
+function hasExtensionNamed(extensions: Extensions | undefined, name: string): boolean {
+    return extensions?.length
+        ? flattenExtensions(extensions).some((extension) => extension.name === name)
+        : false;
+}
+
+function createPlaceholderExtension(placeholder: EditorPlaceholderOptions) {
+    const defaultOptions: Partial<PlaceholderOptions> = {
+        emptyEditorClass: 'is-editor-empty',
+        emptyNodeClass: 'is-empty',
+    };
+
+    return Placeholder.configure(
+        (typeof placeholder === 'string'
+            ? {
+                  ...defaultOptions,
+                  placeholder,
+              }
+            : deepMerge(defaultOptions, placeholder)) as PlaceholderOptions,
+    );
+}
+
 export function createEditorExtensions(options: CreateEditorExtensionsOptions = {}): Extensions {
+    const extraExtensions = options.extraExtensions ?? [];
     const extensions: Extensions = [
         StarterKit.configure({
             codeBlock: false,
@@ -171,5 +197,13 @@ export function createEditorExtensions(options: CreateEditorExtensionsOptions = 
         }
     }
 
-    return [...extensions, ...(options.extraExtensions ?? [])];
+    if (
+        options.placeholder &&
+        !hasExtensionNamed(extensions, 'placeholder') &&
+        !hasExtensionNamed(extraExtensions, 'placeholder')
+    ) {
+        extensions.push(createPlaceholderExtension(options.placeholder));
+    }
+
+    return [...extensions, ...extraExtensions];
 }

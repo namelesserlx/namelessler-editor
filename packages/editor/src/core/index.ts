@@ -12,6 +12,7 @@ export {
     createNormalizeOptions,
     isEditorJson,
     normalizeEditorJson,
+    normalizeEditorJsonWithReport,
 } from './model';
 export type {
     ExportEditorContentOptions,
@@ -24,6 +25,9 @@ export type {
     EditorAttributeSanitizerContext,
     EditorAttributeSanitizerResult,
     EditorAttributeSanitizers,
+    EditorContentWarning,
+    EditorContentWarningCode,
+    NormalizeEditorJsonResult,
 } from './model';
 export { deepMerge } from './deepMerge';
 export { createLowlightRegistry, createLowlight, IframeEmbed } from './extensions';
@@ -35,7 +39,11 @@ export {
     TEXT_PALETTE,
 } from './palette';
 export type { PaletteColor } from './palette';
-export type { CreateEditorExtensionsOptions, EditorFeatureFlags } from './extensions';
+export type {
+    CreateEditorExtensionsOptions,
+    EditorFeatureFlags,
+    EditorPlaceholderOptions,
+} from './extensions';
 export type { EditorHighlightLanguage, EditorLowlightRegistry } from './extensions';
 export type { IframeExtensionOptions, SetIframeEmbedOptions } from './extensions';
 export type { EditorFormat, EditorValue } from './types';

@@ -1,20 +1,13 @@
 import type { Extensions, JSONContent } from '@tiptap/core';
 import type { CreateEditorExtensionsOptions } from '../core/createEditorExtensions';
+import type { EditorContentWarning } from '../core/documentModel';
 import type { EditorFormat, EditorValue } from '../core/types';
 import type { EditorAttributeSanitizers } from '../core/documentModel';
 import type { IframeExtensionOptions } from '../core/iframe';
 import type { HtmlPolicy } from '../security/types';
 
-export interface FormatWarning {
-    code:
-        | 'UNSUPPORTED_NODE'
-        | 'UNSUPPORTED_MARK'
-        | 'DROPPED_ATTRIBUTE'
-        | 'SANITIZED_ATTRIBUTE'
-        | 'LOSSY_MARKDOWN_EXPORT';
-    message: string;
-    path?: Array<string | number>;
-}
+export type FormatWarning = EditorContentWarning;
+export type UnsupportedContentStrategy = 'placeholder' | 'drop' | 'fail';
 
 export interface FormatResult<T> {
     value: T;
@@ -39,9 +32,13 @@ export interface ImportContentOptions<
     inputFormat: Format;
 }
 
+export interface FormatExportOptions extends FormatConversionOptions {
+    unsupported?: UnsupportedContentStrategy;
+}
+
 export interface ExportContentOptions<
     Format extends EditorFormat = EditorFormat,
-> extends FormatConversionOptions {
+> extends FormatExportOptions {
     outputFormat: Format;
 }
 

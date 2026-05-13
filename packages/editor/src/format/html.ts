@@ -1,10 +1,11 @@
 import type { JSONContent } from '@tiptap/core';
 import { generateHTML, generateJSON } from '@tiptap/html';
-import { normalizeEditorJson } from '../core/documentModel';
-import { sanitizeHtml } from '../security/htmlPolicy';
-import type { FormatConversionOptions, FormatResult } from './types';
+import { normalizeEditorJsonWithReport } from '../core/documentModel';
+import { sanitizeHtmlWithReport } from '../security/htmlPolicy';
+import type { FormatConversionOptions, FormatExportOptions, FormatResult } from './types';
 import { createFormatExtensions } from './extensions';
-import { getIframeOptions, getNormalizeOptions } from './schema';
+import { getHtmlSchemaSupport, getIframeOptions, getNormalizeOptions } from './schema';
+import { applyUnsupportedContentStrategy } from './unsupported';
 
 function now(): number {
     return performance.now();
@@ -16,46 +17,64 @@ export function importHtml(
 ): FormatResult<JSONContent> {
     const startedAt = now();
     const extensions = createFormatExtensions(options);
-    const safeHtml = sanitizeHtml(html, options?.htmlPolicy);
-    const value = normalizeEditorJson(
-        generateJSON(safeHtml, extensions),
+    const sanitized = sanitizeHtmlWithReport(html, options?.htmlPolicy);
+    const normalized = normalizeEditorJsonWithReport(
+        generateJSON(sanitized.value, extensions),
         getNormalizeOptions(extensions, {
             iframe: getIframeOptions(options),
             attributeSanitizers: options?.attributeSanitizers,
         }),
     );
+    const warnings = [...sanitized.warnings, ...normalized.warnings];
 
     return {
-        value,
-        warnings: [],
+        value: normalized.value,
+        warnings,
         stats: {
             durationMs: now() - startedAt,
-            lossy: false,
+            lossy: warnings.length > 0,
         },
     };
 }
 
-export function exportHtml(
-    doc: JSONContent,
-    options?: FormatConversionOptions,
-): FormatResult<string> {
+export function exportHtml(doc: JSONContent, options?: FormatExportOptions): FormatResult<string> {
     const startedAt = now();
     const extensions = createFormatExtensions(options);
-    const normalized = normalizeEditorJson(
+    const unsupported = applyUnsupportedContentStrategy(
         doc,
+        getHtmlSchemaSupport(extensions),
+        'HTML',
+        options?.unsupported ?? 'placeholder',
+    );
+
+    if (unsupported.failed) {
+        return {
+            value: '',
+            warnings: unsupported.warnings,
+            stats: {
+                durationMs: now() - startedAt,
+                lossy: true,
+            },
+        };
+    }
+
+    const normalized = normalizeEditorJsonWithReport(
+        unsupported.value,
         getNormalizeOptions(extensions, {
             iframe: getIframeOptions(options),
             attributeSanitizers: options?.attributeSanitizers,
         }),
     );
-    const html = generateHTML(normalized, extensions);
+    const html = generateHTML(normalized.value, extensions);
+    const sanitized = sanitizeHtmlWithReport(html, options?.htmlPolicy);
+    const warnings = [...unsupported.warnings, ...normalized.warnings, ...sanitized.warnings];
 
     return {
-        value: sanitizeHtml(html, options?.htmlPolicy),
-        warnings: [],
+        value: sanitized.value,
+        warnings,
         stats: {
             durationMs: now() - startedAt,
-            lossy: false,
+            lossy: warnings.length > 0,
         },
     };
 }

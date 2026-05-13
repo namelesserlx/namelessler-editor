@@ -151,6 +151,36 @@ describe('Editor', () => {
         expect(container.querySelector('[data-nameless-editor-toolbar="true"]')).toBeNull();
     });
 
+    it('renders placeholder decorations for empty editor content', async () => {
+        let editor: TiptapEditor | null = null;
+
+        await act(async () => {
+            root.render(
+                <Editor
+                    defaultContent={createEmptyDocument()}
+                    placeholder="Write something..."
+                    onReady={(currentEditor) => {
+                        editor = currentEditor;
+                    }}
+                    editorOptions={{
+                        features: {
+                            codeBlock: false,
+                        },
+                    }}
+                />,
+            );
+            await nextFrame();
+        });
+
+        await waitForEditor(() => editor);
+
+        const placeholderNode = container.querySelector(
+            '[data-nameless-editor-content="true"] [data-placeholder="Write something..."]',
+        );
+        expect(placeholderNode).not.toBeNull();
+        expect(placeholderNode?.classList.contains('is-empty')).toBe(true);
+    });
+
     it('does not render a built-in slash command menu when slash content is typed', async () => {
         let editor: TiptapEditor | null = null;
 

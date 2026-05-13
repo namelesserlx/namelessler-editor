@@ -2,7 +2,10 @@ import type React from 'react';
 import type { Extensions, JSONContent } from '@tiptap/core';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import type { EditorFormat, EditorValue } from '../core/types';
-import type { CreateEditorExtensionsOptions } from '../core/createEditorExtensions';
+import type {
+    CreateEditorExtensionsOptions,
+    EditorPlaceholderOptions,
+} from '../core/createEditorExtensions';
 import type { EditorAttributeSanitizers } from '../core/documentModel';
 import type { EditorLocale } from '../i18n';
 import type { HtmlPolicy } from '../security/types';
@@ -48,7 +51,7 @@ export interface UseEditorControllerOptions {
     contentFormat?: EditorFormat;
     readonly?: boolean;
     autofocus?: boolean;
-    placeholder?: string;
+    placeholder?: EditorPlaceholderOptions;
     contentClassName?: string;
     locale?: EditorLocale;
     extensions?: Extensions;

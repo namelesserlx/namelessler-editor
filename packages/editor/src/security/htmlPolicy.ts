@@ -1,8 +1,13 @@
 import DOMPurify from 'dompurify';
+import type { EditorContentWarning } from '../core/documentModel';
 import type { HtmlPolicy } from './types';
 import { sanitizeUrl } from './urlPolicy';
 
 type DomPurifySanitize = (input: string, config?: Record<string, unknown>) => string;
+interface HtmlSanitizeInternalResult {
+    value: string;
+    changed: boolean;
+}
 
 function normalizePolicy(policy?: HtmlPolicy): Required<HtmlPolicy> {
     return {
@@ -35,7 +40,7 @@ const SAFE_RGB_COLOR_PATTERN =
     /^rgba?\(\s*(?:\d{1,3}%?\s*,\s*){2}\d{1,3}%?(?:\s*,\s*(?:0|1|0?\.\d+|100%|\d{1,2}%))?\s*\)$/i;
 const SAFE_HSL_COLOR_PATTERN =
     /^hsla?\(\s*\d{1,3}(?:deg|rad|turn)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(?:\s*,\s*(?:0|1|0?\.\d+|100%|\d{1,2}%))?\s*\)$/i;
-const SAFE_NAMED_COLORS = new Set(['black', 'white', 'transparent', 'currentcolor']);
+const SAFE_NAMED_COLORS = new Set(['black', 'white', 'transparent', 'currentcolor', 'inherit']);
 const SAFE_TEXT_ALIGN_VALUES = new Set(['left', 'center', 'right', 'justify']);
 
 function isSafeCssColor(value: string): boolean {
@@ -49,29 +54,50 @@ function isSafeCssColor(value: string): boolean {
     );
 }
 
-function sanitizeStyleAttribute(style: string): string | null {
+function sanitizeStyleAttributeWithReport(style: string): {
+    value: string | null;
+    changed: boolean;
+} {
     const safeDeclarations: string[] = [];
+    let changed = false;
 
     style.split(';').forEach((declaration) => {
         const separatorIndex = declaration.indexOf(':');
         if (separatorIndex < 0) {
+            if (declaration.trim()) {
+                changed = true;
+            }
             return;
         }
 
         const property = declaration.slice(0, separatorIndex).trim().toLowerCase();
         const value = declaration.slice(separatorIndex + 1).trim();
         const normalizedValue = value.toLowerCase();
+        let accepted = false;
 
         if ((property === 'color' || property === 'background-color') && isSafeCssColor(value)) {
             safeDeclarations.push(`${property}: ${value}`);
+            accepted = true;
         }
 
         if (property === 'text-align' && SAFE_TEXT_ALIGN_VALUES.has(normalizedValue)) {
             safeDeclarations.push(`${property}: ${normalizedValue}`);
+            accepted = true;
+        }
+
+        if (!accepted) {
+            changed = true;
         }
     });
 
-    return safeDeclarations.length > 0 ? safeDeclarations.join('; ') : null;
+    return {
+        value: safeDeclarations.length > 0 ? safeDeclarations.join('; ') : null,
+        changed: changed || (safeDeclarations.length === 0 && style.trim().length > 0),
+    };
+}
+
+function sanitizeStyleAttribute(style: string): string | null {
+    return sanitizeStyleAttributeWithReport(style).value;
 }
 
 function hasBrowserDocument(): boolean {
@@ -174,71 +200,141 @@ function sanitizeWithoutDom(input: string, policy: Required<HtmlPolicy>): string
     );
 }
 
-function enforceStylePolicy(html: string): string {
+function enforceStylePolicy(html: string): HtmlSanitizeInternalResult {
     if (!hasBrowserDocument()) {
-        return sanitizeStyleAttributesWithoutDom(html);
+        const value = sanitizeStyleAttributesWithoutDom(html);
+
+        return {
+            value,
+            changed: value !== html,
+        };
     }
 
     const template = document.createElement('template');
     template.innerHTML = html;
+    let changed = false;
 
     template.content.querySelectorAll<HTMLElement>('[style]').forEach((element) => {
-        const safeStyle = sanitizeStyleAttribute(element.getAttribute('style') ?? '');
+        const style = element.getAttribute('style') ?? '';
+        const safeStyle = sanitizeStyleAttributeWithReport(style);
+        changed = changed || safeStyle.changed;
 
-        if (safeStyle) {
-            element.setAttribute('style', safeStyle);
+        if (safeStyle.value) {
+            element.setAttribute('style', safeStyle.value);
         } else {
             element.removeAttribute('style');
         }
     });
 
-    return template.innerHTML;
+    return {
+        value: template.innerHTML,
+        changed,
+    };
 }
 
-function enforceIframePolicy(html: string, policy: Required<HtmlPolicy>): string {
+function enforceIframePolicy(
+    html: string,
+    policy: Required<HtmlPolicy>,
+): HtmlSanitizeInternalResult {
     if (!hasBrowserDocument()) {
-        return enforceIframePolicyWithoutDom(html, policy);
+        const value = enforceIframePolicyWithoutDom(html, policy);
+
+        return {
+            value,
+            changed: value !== html,
+        };
     }
 
     if (!policy.iframe.enabled) {
-        return html;
+        return {
+            value: html,
+            changed: false,
+        };
     }
 
     const template = document.createElement('template');
     template.innerHTML = html;
+    let changed = false;
 
     template.content.querySelectorAll('iframe').forEach((iframe) => {
         const src = iframe.getAttribute('src');
         if (!src || !isAllowedIframeSrc(src, policy.iframe.allowedHosts ?? [])) {
             iframe.remove();
+            changed = true;
             return;
         }
 
-        iframe.setAttribute('src', sanitizeUrl(src, { allowedProtocols: ['https:'] }) ?? '');
+        const safeSrc = sanitizeUrl(src, { allowedProtocols: ['https:'] }) ?? '';
+        if (safeSrc !== src) {
+            changed = true;
+        }
+        iframe.setAttribute('src', safeSrc);
 
         Array.from(iframe.attributes).forEach((attribute) => {
             if (!['src', 'title', 'allow', 'allowfullscreen', 'loading'].includes(attribute.name)) {
                 iframe.removeAttribute(attribute.name);
+                changed = true;
             }
         });
     });
 
-    return template.innerHTML;
+    return {
+        value: template.innerHTML,
+        changed,
+    };
+}
+
+function sanitizeHtmlInternal(input: string, policy?: HtmlPolicy): HtmlSanitizeInternalResult {
+    const resolvedPolicy = normalizePolicy(policy);
+    const purifier = DOMPurify as unknown as {
+        sanitize?: DomPurifySanitize;
+        removed?: unknown[];
+    };
+    const sanitize = purifier.sanitize;
+    const usedDomPurify = typeof sanitize === 'function';
+
+    const sanitized = usedDomPurify
+        ? sanitize.call(DOMPurify, input, {
+              ADD_TAGS: resolvedPolicy.iframe.enabled ? ['iframe'] : [],
+              ADD_ATTR: resolvedPolicy.iframe.enabled
+                  ? ['allow', 'allowfullscreen', 'loading', 'style', 'target', 'title']
+                  : ['style', 'target'],
+          })
+        : sanitizeWithoutDom(input, resolvedPolicy);
+    const styleResult = enforceStylePolicy(sanitized);
+    const iframeResult = enforceIframePolicy(styleResult.value, resolvedPolicy);
+
+    return {
+        value: iframeResult.value,
+        changed:
+            (usedDomPurify
+                ? Array.isArray(purifier.removed) && purifier.removed.length > 0
+                : sanitized !== input) ||
+            styleResult.changed ||
+            iframeResult.changed,
+    };
 }
 
 export function sanitizeHtml(input: string, policy?: HtmlPolicy): string {
-    const resolvedPolicy = normalizePolicy(policy);
-    const sanitize = (DOMPurify as unknown as { sanitize?: DomPurifySanitize }).sanitize;
+    return sanitizeHtmlInternal(input, policy).value;
+}
 
-    const sanitized =
-        typeof sanitize === 'function'
-            ? sanitize.call(DOMPurify, input, {
-                  ADD_TAGS: resolvedPolicy.iframe.enabled ? ['iframe'] : [],
-                  ADD_ATTR: resolvedPolicy.iframe.enabled
-                      ? ['allow', 'allowfullscreen', 'loading', 'style', 'target', 'title']
-                      : ['style', 'target'],
-              })
-            : sanitizeWithoutDom(input, resolvedPolicy);
+export function sanitizeHtmlWithReport(
+    input: string,
+    policy?: HtmlPolicy,
+): { value: string; warnings: EditorContentWarning[] } {
+    const result = sanitizeHtmlInternal(input, policy);
 
-    return enforceIframePolicy(enforceStylePolicy(sanitized), resolvedPolicy);
+    return {
+        value: result.value,
+        warnings: !result.changed
+            ? []
+            : [
+                  {
+                      code: 'SANITIZED_HTML',
+                      message: 'HTML was sanitized before conversion.',
+                      path: [],
+                  },
+              ],
+    };
 }

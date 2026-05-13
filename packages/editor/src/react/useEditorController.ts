@@ -59,12 +59,13 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
         () =>
             createEditorExtensions({
                 ...options.editorOptions,
+                placeholder: options.placeholder ?? options.editorOptions?.placeholder,
                 extraExtensions: [
                     ...(options.editorOptions?.extraExtensions ?? []),
                     ...(options.extensions ?? []),
                 ],
             }),
-        [options.editorOptions, options.extensions],
+        [options.editorOptions, options.extensions, options.placeholder],
     );
 
     const editor = useEditor({
@@ -78,7 +79,6 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
             attributes: {
                 class: options.contentClassName ?? '',
                 'data-nameless-editor-content': 'true',
-                ...(options.placeholder ? { 'data-placeholder': options.placeholder } : {}),
             },
             transformPastedHTML: (html) => sanitizeHtml(html, latestOptionsRef.current.htmlPolicy),
         },

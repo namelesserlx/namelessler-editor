@@ -7,7 +7,14 @@ describe('html format spike', () => {
             inputFormat: 'html',
         });
 
-        expect(result.warnings).toEqual([]);
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'SANITIZED_HTML',
+                }),
+            ]),
+        );
         expect(result.value).toMatchObject({
             type: 'doc',
             content: [
@@ -54,6 +61,26 @@ describe('html format spike', () => {
         const exported = exportContent(imported.value, { outputFormat: 'html' });
 
         expect(exported.value).toBe('<h2>Title</h2><p><strong>Body</strong></p>');
+    });
+
+    it('does not warn for empty default attributes emitted by HTML parsing', () => {
+        const result = importContent('<h2>Title</h2><p>Body</p>', {
+            inputFormat: 'html',
+        });
+
+        expect(result.warnings).toEqual([]);
+        expect(result.stats.lossy).toBe(false);
+        expect(result.value).toMatchObject({
+            type: 'doc',
+            content: [
+                {
+                    type: 'heading',
+                    attrs: { level: 2 },
+                    content: [{ type: 'text', text: 'Title' }],
+                },
+                { type: 'paragraph', content: [{ type: 'text', text: 'Body' }] },
+            ],
+        });
     });
 
     it('exports default editor marks and block attrs with the format schema', () => {
@@ -124,5 +151,74 @@ describe('html format spike', () => {
                 },
             ],
         });
+    });
+
+    it('uses placeholders for unsupported nodes when exporting HTML by default', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+                ],
+            },
+            { outputFormat: 'html' },
+        );
+
+        expect(result.value).toContain('<p>Before</p>');
+        expect(result.value).toContain('<p>[Unsupported node: customWidget]</p>');
+        expect(result.value).toContain('<p>After</p>');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'UNSUPPORTED_NODE',
+                    path: ['content', 1],
+                }),
+            ]),
+        );
+    });
+
+    it('can drop unsupported HTML nodes while preserving supported content', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+                ],
+            },
+            { outputFormat: 'html', unsupported: 'drop' },
+        );
+
+        expect(result.value).toContain('<p>Before</p>');
+        expect(result.value).not.toContain('customWidget');
+        expect(result.value).toContain('<p>After</p>');
+        expect(result.stats.lossy).toBe(true);
+    });
+
+    it('keeps a strict HTML export mode for callers that want fail-fast behavior', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                ],
+            },
+            { outputFormat: 'html', unsupported: 'fail' },
+        );
+
+        expect(result.value).toBe('');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual([
+            {
+                code: 'UNSUPPORTED_NODE',
+                message: 'Node "customWidget" cannot be exported to HTML.',
+                path: ['content', 1],
+            },
+        ]);
     });
 });

@@ -23,6 +23,11 @@ export interface MarkdownSchemaSupport {
     marks: Set<string>;
 }
 
+export interface FormatSchemaSupport {
+    nodes: Set<string>;
+    marks: Set<string>;
+}
+
 function eachFlattenedExtension(
     extensions: Extensions | undefined,
     callback: (extension: AnyExtension) => void,
@@ -63,6 +68,55 @@ export function getNormalizeOptions(
         attributeSanitizers: options.attributeSanitizers,
         strictExtensionSchema: true,
     });
+}
+
+export function getEditorSchemaSupport(extensions?: Extensions): FormatSchemaSupport {
+    const nodes = new Set<string>();
+    const marks = new Set<string>();
+
+    eachFlattenedExtension(extensions, (extension) => {
+        if (extension.type === 'node') {
+            nodes.add(extension.name);
+        }
+
+        if (extension.type === 'mark') {
+            marks.add(extension.name);
+        }
+    });
+
+    return { nodes, marks };
+}
+
+export function getHtmlSchemaSupport(extensions?: Extensions): FormatSchemaSupport {
+    const nodes = new Set<string>();
+    const marks = new Set<string>();
+
+    eachFlattenedExtension(extensions, (extension) => {
+        const renderHtml = getExtensionField(extension, 'renderHTML');
+
+        if (
+            extension.type === 'node' &&
+            (extension.name === 'doc' || extension.name === 'text' || renderHtml)
+        ) {
+            nodes.add(extension.name);
+        }
+
+        if (extension.type === 'mark' && renderHtml) {
+            marks.add(extension.name);
+        }
+    });
+
+    return { nodes, marks };
+}
+
+export function intersectSchemaSupport(
+    left: FormatSchemaSupport,
+    right: FormatSchemaSupport,
+): FormatSchemaSupport {
+    return {
+        nodes: new Set([...left.nodes].filter((type) => right.nodes.has(type))),
+        marks: new Set([...left.marks].filter((type) => right.marks.has(type))),
+    };
 }
 
 export function getMarkdownSchemaSupport(

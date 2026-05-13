@@ -56,4 +56,36 @@ describe('format performance smoke tests', () => {
         expect(reparsedMarkdown.stats.durationMs).toBeLessThan(1_500);
         expect(reparsedHtml.stats.durationMs).toBeLessThan(1_500);
     });
+
+    it('keeps repeated markdown imports stable for long documents', () => {
+        const document = createLargeDocument(1_000);
+        const warmupDocument = createLargeDocument(120);
+        const markdown = exportContent(document, { outputFormat: 'markdown' });
+        const warmupMarkdown = exportContent(warmupDocument, { outputFormat: 'markdown' });
+        const durations: number[] = [];
+
+        expect(markdown.warnings).toEqual([]);
+        expect(warmupMarkdown.warnings).toEqual([]);
+
+        for (let run = 0; run < 24; run += 1) {
+            const reparsed = importContent(warmupMarkdown.value, { inputFormat: 'markdown' });
+
+            expect(reparsed.warnings).toEqual([]);
+            expect(reparsed.value.content?.length).toBe(warmupDocument.content?.length);
+        }
+
+        for (let run = 0; run < 3; run += 1) {
+            const reparsed = importContent(markdown.value, { inputFormat: 'markdown' });
+
+            expect(reparsed.warnings).toEqual([]);
+            expect(reparsed.value.content?.length).toBe(document.content?.length);
+            durations.push(reparsed.stats.durationMs);
+        }
+
+        const fastest = Math.min(...durations);
+        const slowest = Math.max(...durations);
+
+        expect(slowest).toBeLessThan(1_200);
+        expect(slowest).toBeLessThan(fastest * 4 + 50);
+    });
 });

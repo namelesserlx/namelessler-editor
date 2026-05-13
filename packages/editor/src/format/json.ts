@@ -1,8 +1,9 @@
 import type { JSONContent } from '@tiptap/core';
-import { normalizeEditorJson } from '../core/documentModel';
-import type { FormatConversionOptions, FormatResult } from './types';
+import { createEmptyDocument, normalizeEditorJsonWithReport } from '../core/documentModel';
+import type { FormatConversionOptions, FormatExportOptions, FormatResult } from './types';
 import { createFormatExtensions } from './extensions';
-import { getIframeOptions, getNormalizeOptions } from './schema';
+import { getEditorSchemaSupport, getIframeOptions, getNormalizeOptions } from './schema';
+import { applyUnsupportedContentStrategy } from './unsupported';
 
 function now(): number {
     return performance.now();
@@ -13,26 +14,63 @@ export function importJson(
     options?: FormatConversionOptions,
 ): FormatResult<JSONContent> {
     const startedAt = now();
+    const normalized = normalizeEditorJsonWithReport(
+        value,
+        getNormalizeOptions(createFormatExtensions(options), {
+            iframe: getIframeOptions(options),
+            attributeSanitizers: options?.attributeSanitizers,
+        }),
+    );
 
     return {
-        value: normalizeEditorJson(
-            value,
-            getNormalizeOptions(createFormatExtensions(options), {
-                iframe: getIframeOptions(options),
-                attributeSanitizers: options?.attributeSanitizers,
-            }),
-        ),
-        warnings: [],
+        value: normalized.value,
+        warnings: normalized.warnings,
         stats: {
             durationMs: now() - startedAt,
-            lossy: false,
+            lossy: normalized.lossy,
         },
     };
 }
 
 export function exportJson(
     doc: JSONContent,
-    options?: FormatConversionOptions,
+    options?: FormatExportOptions,
 ): FormatResult<JSONContent> {
-    return importJson(doc, options);
+    const startedAt = now();
+    const extensions = createFormatExtensions(options);
+    const unsupported = applyUnsupportedContentStrategy(
+        doc,
+        getEditorSchemaSupport(extensions),
+        'JSON',
+        options?.unsupported ?? 'drop',
+    );
+
+    if (unsupported.failed) {
+        return {
+            value: createEmptyDocument(),
+            warnings: unsupported.warnings,
+            stats: {
+                durationMs: now() - startedAt,
+                lossy: true,
+            },
+        };
+    }
+
+    const normalized = normalizeEditorJsonWithReport(
+        unsupported.value,
+        getNormalizeOptions(extensions, {
+            iframe: getIframeOptions(options),
+            attributeSanitizers: options?.attributeSanitizers,
+        }),
+    );
+    const warnings = [...unsupported.warnings, ...normalized.warnings];
+
+    return {
+        value: normalized.value,
+        warnings,
+        stats: {
+            durationMs: now() - startedAt,
+            lossy: warnings.length > 0,
+        },
+    };
 }

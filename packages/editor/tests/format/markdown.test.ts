@@ -44,6 +44,30 @@ describe('markdown format spike', () => {
         });
     });
 
+    it('does not warn for empty default attributes emitted by markdown parsing', () => {
+        const result = importContent('[site](https://example.com)', {
+            inputFormat: 'markdown',
+        });
+
+        expect(result.warnings).toEqual([]);
+        expect(result.stats.lossy).toBe(false);
+        expect(result.value).toMatchObject({
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'site',
+                            marks: [{ type: 'link', attrs: { href: 'https://example.com' } }],
+                        },
+                    ],
+                },
+            ],
+        });
+    });
+
     it('removes raw HTML from markdown by default', () => {
         const result = importContent('<img src=x onerror=alert(1)><script>alert(1)</script>', {
             inputFormat: 'markdown',
@@ -51,6 +75,14 @@ describe('markdown format spike', () => {
 
         expect(JSON.stringify(result.value)).not.toContain('script');
         expect(JSON.stringify(result.value)).not.toContain('onerror');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'SANITIZED_HTML',
+                }),
+            ]),
+        );
     });
 
     it('preserves HTML text inside fenced code blocks while removing raw HTML outside', () => {
@@ -71,6 +103,14 @@ describe('markdown format spike', () => {
             attrs: { language: 'html' },
             content: [{ type: 'text', text: '<div class="example">Hello</div>' }],
         });
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'SANITIZED_HTML',
+                }),
+            ]),
+        );
     });
 
     it('exports supported JSON to stable markdown', () => {
@@ -99,20 +139,106 @@ describe('markdown format spike', () => {
         expect(result.warnings).toEqual([]);
     });
 
-    it('emits an error warning for unknown nodes when exporting markdown', () => {
+    it('reports rich attributes that markdown export cannot preserve', () => {
         const result = exportContent(
             {
                 type: 'doc',
-                content: [{ type: 'customWidget', attrs: { id: 'a' } }],
+                content: [
+                    {
+                        type: 'paragraph',
+                        attrs: { textAlign: 'center' },
+                        content: [{ type: 'text', text: 'Centered' }],
+                    },
+                ],
             },
             { outputFormat: 'markdown' },
         );
 
+        expect(result.value).toContain('Centered');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual([
+            {
+                code: 'LOSSY_MARKDOWN_EXPORT',
+                message: 'Node "paragraph" has attributes that cannot be exported to markdown.',
+                path: ['content', 0, 'attrs'],
+            },
+        ]);
+    });
+
+    it('uses placeholders for unsupported nodes when exporting markdown by default', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+                ],
+            },
+            { outputFormat: 'markdown' },
+        );
+
+        expect(result.value).toContain('Before');
+        expect(result.value).toContain('[Unsupported node: customWidget]');
+        expect(result.value).toContain('After');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                {
+                    code: 'UNSUPPORTED_NODE',
+                    message: 'Node "customWidget" cannot be exported to markdown.',
+                    path: ['content', 1],
+                },
+            ]),
+        );
+    });
+
+    it('can drop unsupported markdown nodes while preserving supported content', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'After' }] },
+                ],
+            },
+            { outputFormat: 'markdown', unsupported: 'drop' },
+        );
+
+        expect(result.value).toContain('Before');
+        expect(result.value).not.toContain('customWidget');
+        expect(result.value).toContain('After');
+        expect(result.stats.lossy).toBe(true);
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'UNSUPPORTED_NODE',
+                    path: ['content', 1],
+                }),
+            ]),
+        );
+    });
+
+    it('keeps a strict markdown export mode for callers that want fail-fast behavior', () => {
+        const result = exportContent(
+            {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+                    { type: 'customWidget', attrs: { id: 'a' } },
+                ],
+            },
+            { outputFormat: 'markdown', unsupported: 'fail' },
+        );
+
+        expect(result.value).toBe('');
+        expect(result.stats.lossy).toBe(true);
         expect(result.warnings).toEqual([
             {
                 code: 'UNSUPPORTED_NODE',
                 message: 'Node "customWidget" cannot be exported to markdown.',
-                path: ['content', 0],
+                path: ['content', 1],
             },
         ]);
     });

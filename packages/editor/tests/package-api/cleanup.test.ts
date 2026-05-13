@@ -92,6 +92,7 @@ describe('editor package cleanup', () => {
             'createNormalizeOptions',
             'isEditorJson',
             'normalizeEditorJson',
+            'normalizeEditorJsonWithReport',
         ]);
         expect(Object.keys(coreExtensionsEntry).sort()).toEqual([
             'IframeEmbed',

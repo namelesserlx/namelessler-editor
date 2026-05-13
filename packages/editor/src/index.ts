@@ -13,6 +13,7 @@ export {
     isEditorJson,
     normalizeEditorContent,
     normalizeEditorJson,
+    normalizeEditorJsonWithReport,
 } from './core';
 export type {
     CreateEditorExtensionsOptions,
@@ -20,10 +21,13 @@ export type {
     EditorAttributeSanitizerContext,
     EditorAttributeSanitizerResult,
     EditorAttributeSanitizers,
+    EditorContentWarning,
+    EditorContentWarningCode,
     EditorFeatureFlags,
     EditorFormat,
     EditorHighlightLanguage,
     EditorLowlightRegistry,
+    EditorPlaceholderOptions,
     IframeExtensionOptions,
     NormalizeEditorJsonOptions,
     NormalizeIframeOptions,
@@ -32,6 +36,7 @@ export type {
     ExportEditorContentOptions,
     ImportEditorContentOptions,
     NormalizeEditorContentOptions,
+    NormalizeEditorJsonResult,
 } from './core';
 export {
     exportContent,
@@ -47,12 +52,14 @@ export type {
     ExportContentOptions,
     ExportContentValue,
     FormatConversionOptions,
+    FormatExportOptions,
     FormatResult,
     FormatWarning,
     ImportContentOptions,
     ImportContentValue,
+    UnsupportedContentStrategy,
 } from './format';
 export { DEFAULT_EDITOR_LOCALE, SUPPORTED_EDITOR_LOCALES } from './i18n';
 export type { EditorLocale } from './i18n';
-export { sanitizeHtml, sanitizeUrl } from './security';
+export { sanitizeHtml, sanitizeHtmlWithReport, sanitizeUrl } from './security';
 export type { HtmlIframePolicy, HtmlPolicy, UrlPolicy } from './security';
