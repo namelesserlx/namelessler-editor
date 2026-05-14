@@ -173,6 +173,23 @@ describe('editor package cleanup', () => {
         expect(existsSync(join(editorRoot, 'ui/SlashMenu.tsx'))).toBe(false);
     });
 
+    it('keeps UI components organized under feature folders', () => {
+        const rootUiFiles = readdirSync(join(editorRoot, 'ui'));
+
+        expect(rootUiFiles.filter((fileName) => fileName.endsWith('.tsx'))).toEqual([]);
+        expect(rootUiFiles).toEqual(
+            expect.arrayContaining([
+                'components',
+                'popovers',
+                'toolbar',
+                'menus',
+                'hooks',
+                'color',
+                'shell',
+            ]),
+        );
+    });
+
     it('removes old implementation files from the source tree', () => {
         [
             'Editor.tsx',
@@ -183,7 +200,6 @@ describe('editor package cleanup', () => {
             'presets',
             'react/Editor.tsx',
             'ui/EditorBubbleMenu.tsx',
-            'ui/menus',
         ].forEach((relativePath) => {
             expect(existsSync(join(editorRoot, relativePath))).toBe(false);
         });

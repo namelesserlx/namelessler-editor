@@ -185,7 +185,7 @@ describe('controller editor API', () => {
         });
         await waitForController(() => controller);
 
-        expect(container.querySelector('[data-tooltip="加粗"]')).not.toBeNull();
+        expect(container.querySelector('[data-nameless-editor-tooltip="加粗"]')).not.toBeNull();
         expect(container.querySelector('[aria-label="代码块"]')).toBeNull();
 
         await act(async () => {

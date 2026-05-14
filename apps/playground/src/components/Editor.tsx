@@ -87,7 +87,6 @@ export function Editor({
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
     const activeRequestRef = useRef<AbortController | null>(null);
-    const [showAiActions, setShowAiActions] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [streamingText, setStreamingText] = useState('');
     const [previewError, setPreviewError] = useState<string | null>(null);
@@ -169,35 +168,11 @@ export function Editor({
         };
     }, [editor, syncEditorContent]);
 
-    useEffect(() => {
-        if (!editor || editor.isDestroyed) return;
-        const handleSelChange = () => {
-            if (editor.state.selection.empty) setShowAiActions(false);
-        };
-        editor.on('selectionUpdate', handleSelChange);
-        return () => {
-            editor.off('selectionUpdate', handleSelChange);
-        };
-    }, [editor]);
-
-    // Close AI dropdown when any formatting command (Bold, Italic, etc.) runs
-    useEffect(() => {
-        if (!editor || editor.isDestroyed) return;
-        const handleTransaction = ({ transaction }: { transaction: { docChanged: boolean } }) => {
-            if (transaction.docChanged) setShowAiActions(false);
-        };
-        editor.on('transaction', handleTransaction);
-        return () => {
-            editor.off('transaction', handleTransaction);
-        };
-    }, [editor]);
-
     const handleAiAction = useCallback(
         async (action: AIAction) => {
             if (!editor) return;
 
             if (!hasAiSettings()) {
-                setShowAiActions(false);
                 onNotify?.({
                     title: 'AI interface is not configured',
                     description: 'Choose Google or DeepSeek and add your own API key.',
@@ -217,7 +192,6 @@ export function Editor({
 
             setSavedSelection({ from, to });
             setIsLoading(true);
-            setShowAiActions(false);
             setShowPreview(true);
             setStreamingText('');
             setPreviewError(null);
@@ -292,21 +266,6 @@ export function Editor({
         setSavedSelection(null);
     };
 
-    const aiActionSection = editor
-        ? {
-              key: 'ai-assist',
-              placement: 'start' as const,
-              render: () => (
-                  <AiAssistDropdown
-                      onAction={handleAiAction}
-                      isOpen={showAiActions}
-                      onOpenChange={setShowAiActions}
-                  />
-              ),
-              onClose: () => setShowAiActions(false),
-          }
-        : null;
-
     return (
         <div
             className="relative w-full max-w-6xl mx-auto mt-12 bg-white rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col"
@@ -316,7 +275,21 @@ export function Editor({
                 controller={controller}
                 ui={{
                     bubbleMenu: {
-                        customSections: aiActionSection ? [aiActionSection] : [],
+                        commands: (defaults, context) => [
+                            {
+                                id: 'ai-assist',
+                                group: 'ai',
+                                render: () =>
+                                    editor ? (
+                                        <AiAssistDropdown
+                                            onAction={handleAiAction}
+                                            isOpen={context.activePopover === 'ai-assist'}
+                                            onOpenChange={context.setPopoverOpen('ai-assist')}
+                                        />
+                                    ) : null,
+                            },
+                            ...defaults,
+                        ],
                     },
                 }}
             />

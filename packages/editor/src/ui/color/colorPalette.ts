@@ -1,10 +1,21 @@
-import { BG_PALETTE, type PaletteColor, TEXT_PALETTE } from '../core/palette';
-import { DEFAULT_EDITOR_LOCALE, type EditorLocale } from '../i18n';
+import { BG_PALETTE, type PaletteColor, TEXT_PALETTE } from '../../core/palette';
+import { DEFAULT_EDITOR_LOCALE, type EditorLocale } from '../../i18n';
+import type { ReactNode } from 'react';
 
 export interface ColorOption {
-    key: 'clear' | PaletteColor['key'];
+    key: string;
+    label?: string;
     value: string | null;
 }
+
+export interface ColorSwatchRenderContext {
+    active: boolean;
+    label: string;
+    mode: 'text' | 'background';
+    option: ColorOption;
+}
+
+export type ColorSwatchRenderer = (context: ColorSwatchRenderContext) => ReactNode;
 
 function toColorOptions(palette: PaletteColor[]): ColorOption[] {
     return [
@@ -16,7 +27,7 @@ function toColorOptions(palette: PaletteColor[]): ColorOption[] {
 export const TEXT_COLORS: ColorOption[] = toColorOptions(TEXT_PALETTE);
 export const BACKGROUND_COLORS: ColorOption[] = toColorOptions(BG_PALETTE);
 
-const COLOR_LABELS: Record<EditorLocale, Record<ColorOption['key'], string>> = {
+const COLOR_LABELS: Record<EditorLocale, Record<string, string>> = {
     'en-US': {
         clear: 'Clear',
         default: 'Default',
@@ -45,6 +56,10 @@ const COLOR_LABELS: Record<EditorLocale, Record<ColorOption['key'], string>> = {
     },
 };
 
-export function getColorLabels(locale: EditorLocale): Record<ColorOption['key'], string> {
+export function getColorLabels(locale: EditorLocale): Record<string, string> {
     return COLOR_LABELS[locale] ?? COLOR_LABELS[DEFAULT_EDITOR_LOCALE];
+}
+
+export function getColorLabel(option: ColorOption, locale: EditorLocale): string {
+    return option.label ?? getColorLabels(locale)[option.key] ?? option.key;
 }

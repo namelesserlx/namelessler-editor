@@ -1,7 +1,7 @@
-import { act, useState, type CSSProperties, type ReactNode } from 'react';
+import { act, type CSSProperties, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DefaultBubbleMenu } from '../../src/ui/DefaultBubbleMenu';
+import { DefaultBubbleMenu } from '../../src/ui/menus/DefaultBubbleMenu';
 
 vi.mock('@tiptap/react/menus', () => ({
     BubbleMenu: ({
@@ -118,6 +118,19 @@ describe('DefaultBubbleMenu UI', () => {
         ).toHaveLength(1);
     });
 
+    it('exposes the selected style label as the bubble menu select tooltip', () => {
+        const { editor } = createEditorMock();
+
+        act(() => {
+            root.render(<DefaultBubbleMenu editor={editor as never} locale="zh-CN" />);
+        });
+
+        const styleTrigger = container.querySelector('[data-nameless-editor-style-trigger="true"]');
+        const tooltipHost = styleTrigger?.closest('[data-nameless-editor-tooltip]');
+
+        expect(tooltipHost?.getAttribute('data-nameless-editor-tooltip')).toBe('正文');
+    });
+
     it('applies format and alignment commands from the compact bubble controls', () => {
         const { editor, chainApi } = createEditorMock();
 
@@ -139,6 +152,18 @@ describe('DefaultBubbleMenu UI', () => {
 
         act(() => {
             container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-style-trigger="true"]')
+                ?.click();
+        });
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-style-option="heading-4"]')
+                ?.click();
+        });
+
+        act(() => {
+            container
                 .querySelector<HTMLButtonElement>('[data-nameless-editor-align-trigger="true"]')
                 ?.click();
         });
@@ -153,6 +178,7 @@ describe('DefaultBubbleMenu UI', () => {
 
         expect(chainApi.focus).toHaveBeenCalled();
         expect(chainApi.toggleHeading).toHaveBeenCalledWith({ level: 2 });
+        expect(chainApi.toggleHeading).toHaveBeenCalledWith({ level: 4 });
         expect(chainApi.setTextAlign).toHaveBeenCalledWith('center');
     });
 
@@ -177,21 +203,88 @@ describe('DefaultBubbleMenu UI', () => {
         ).toBe('输入链接地址...');
     });
 
-    it('asks custom sections to close when built-in controls are used', () => {
+    it('lets callers replace default bubble menu commands with a registry', () => {
         const { editor } = createEditorMock();
-        const onClose = vi.fn();
+        const customAction = vi.fn();
 
         act(() => {
             root.render(
                 <DefaultBubbleMenu
                     editor={editor as never}
                     locale="zh-CN"
-                    customSections={[
+                    commands={(defaults) => [
+                        ...defaults.filter((command) => command.id === 'bold'),
                         {
-                            key: 'ai',
-                            placement: 'start',
-                            onClose,
-                            render: () => <button type="button">AI</button>,
+                            id: 'ai-polish',
+                            group: 'ai',
+                            render: () => (
+                                <button
+                                    type="button"
+                                    data-nameless-editor-ai-polish="true"
+                                    onClick={customAction}
+                                >
+                                    AI polish
+                                </button>
+                            ),
+                        },
+                    ]}
+                />,
+            );
+        });
+
+        expect(container.querySelector('[data-nameless-editor-style-trigger="true"]')).toBeNull();
+        expect(container.querySelector<HTMLButtonElement>('[aria-label="加粗"]')).not.toBeNull();
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-ai-polish="true"]')
+                ?.click();
+        });
+
+        expect(customAction).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives custom bubble menu commands controlled popover state and close helpers', () => {
+        const { editor } = createEditorMock();
+
+        act(() => {
+            root.render(
+                <DefaultBubbleMenu
+                    editor={editor as never}
+                    locale="zh-CN"
+                    commands={(defaults, context) => [
+                        ...defaults.filter((command) => command.id === 'style'),
+                        {
+                            id: 'ai',
+                            group: 'ai',
+                            render: () => {
+                                const open = context.activePopover === 'ai';
+
+                                return (
+                                    <span>
+                                        <button
+                                            type="button"
+                                            data-nameless-editor-ai-trigger="true"
+                                            aria-expanded={open}
+                                            onClick={() => context.setPopoverOpen('ai')(!open)}
+                                        >
+                                            AI
+                                        </button>
+                                        {open ? (
+                                            <span data-nameless-editor-ai-popover="true">
+                                                AI actions
+                                                <button
+                                                    type="button"
+                                                    data-nameless-editor-ai-close="true"
+                                                    onClick={context.closePopovers}
+                                                >
+                                                    Close
+                                                </button>
+                                            </span>
+                                        ) : null}
+                                    </span>
+                                );
+                            },
                         },
                     ]}
                 />,
@@ -203,71 +296,27 @@ describe('DefaultBubbleMenu UI', () => {
                 .querySelector<HTMLButtonElement>('[data-nameless-editor-style-trigger="true"]')
                 ?.click();
         });
-
-        expect(onClose).toHaveBeenCalledTimes(1);
-    });
-
-    it('closes built-in popovers when a custom section opens', () => {
-        const { editor } = createEditorMock();
-
-        function CustomSectionHarness() {
-            const [customOpen, setCustomOpen] = useState(false);
-
-            return (
-                <DefaultBubbleMenu
-                    editor={editor as never}
-                    locale="zh-CN"
-                    customSections={[
-                        {
-                            key: 'ai',
-                            placement: 'start',
-                            render: () => (
-                                <span>
-                                    <button
-                                        type="button"
-                                        data-nameless-editor-custom-trigger="true"
-                                        onClick={() => setCustomOpen(true)}
-                                    >
-                                        AI
-                                    </button>
-                                    {customOpen ? (
-                                        <span data-nameless-editor-custom-popover="true">
-                                            AI actions
-                                        </span>
-                                    ) : null}
-                                </span>
-                            ),
-                        },
-                    ]}
-                />
-            );
-        }
-
-        act(() => {
-            root.render(<CustomSectionHarness />);
-        });
-
-        act(() => {
-            container
-                .querySelector<HTMLButtonElement>('[data-nameless-editor-style-trigger="true"]')
-                ?.click();
-        });
-
         expect(
             container.querySelector('[data-nameless-editor-style-option="heading-1"]'),
         ).not.toBeNull();
 
         act(() => {
             container
-                .querySelector<HTMLButtonElement>('[data-nameless-editor-custom-trigger="true"]')
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-ai-trigger="true"]')
                 ?.click();
         });
 
-        expect(
-            container.querySelector('[data-nameless-editor-custom-popover="true"]'),
-        ).not.toBeNull();
+        expect(container.querySelector('[data-nameless-editor-ai-popover="true"]')).not.toBeNull();
         expect(
             container.querySelector('[data-nameless-editor-style-option="heading-1"]'),
         ).toBeNull();
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>('[data-nameless-editor-ai-close="true"]')
+                ?.click();
+        });
+
+        expect(container.querySelector('[data-nameless-editor-ai-popover="true"]')).toBeNull();
     });
 });

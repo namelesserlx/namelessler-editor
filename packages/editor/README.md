@@ -199,23 +199,74 @@ Use the same `extensions` and `editorOptions` for `ReadonlyRenderer`, `importEdi
 <Editor
   controller={controller}
   ui={{
-    toolbar: true,
+    toolbar: {
+      enabled: true,
+      commands: (defaults) => defaults.filter((command) => command.id !== 'heading-3'),
+      slots: [
+        {
+          key: 'ai',
+          placement: 'end',
+          render: () => <button type="button">AI</button>,
+        },
+      ],
+    },
     bubbleMenu: {
       enabled: true,
       zIndex: 9999,
+      commands: (defaults) => [
+        ...defaults.filter((command) => command.id !== 'blockquote'),
+        {
+          id: 'ai-polish',
+          group: 'ai',
+          render: ({ activePopover, closePopovers, setPopoverOpen }) => (
+            <span>
+              <button
+                type="button"
+                aria-expanded={activePopover === 'ai-polish'}
+                onClick={() => setPopoverOpen('ai-polish')(activePopover !== 'ai-polish')}
+              >
+                AI
+              </button>
+              {activePopover === 'ai-polish' ? (
+                <span role="dialog">
+                  Custom AI actions
+                  <button type="button" onClick={closePopovers}>
+                    Close
+                  </button>
+                </span>
+              ) : null}
+            </span>
+          ),
+        },
+      ],
+    },
+    tooltip: {
+      enabled: true,
+      delay: 300,
+      placement: 'top',
     },
     linkPopover: true,
-    colorPicker: true,
+    colorPicker: {
+      enabled: true,
+      textColors: [
+        { key: 'clear', label: 'Clear', value: null },
+        { key: 'brand', label: 'Brand', value: '#6d28d9' },
+      ],
+      renderSwatch: ({ label }) => <span>{label}</span>,
+    },
   }}
 />
 ```
 
-| Option        | Type                                                                 | Default                 | Description                       |
-| ------------- | -------------------------------------------------------------------- | ----------------------- | --------------------------------- |
-| `toolbar`     | `boolean`                                                            | `true`                  | Show the default toolbar          |
-| `bubbleMenu`  | `boolean \| { enabled?: boolean; zIndex?: number; shouldShow?: fn }` | enabled, `zIndex: 9999` | Control the selection bubble menu |
-| `linkPopover` | `boolean`                                                            | `true`                  | Show link editing popover         |
-| `colorPicker` | `boolean`                                                            | `true`                  | Show text/background color picker |
+| Option        | Type                                                                                                                                 | Default                 | Description                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | --------------------------------------------------- |
+| `toolbar`     | `boolean \| { enabled?: boolean; commands?: registry; slots?: ToolbarSlot[] }`                                                       | `true`                  | Show, remove, reorder, or extend toolbar            |
+| `bubbleMenu`  | `boolean \| { enabled?: boolean; zIndex?: number; shouldShow?: fn; commands?: registry }`                                            | enabled, `zIndex: 9999` | Show, remove, reorder, or extend selection commands |
+| `tooltip`     | `boolean \| { enabled?: boolean; delay?: number; placement?: 'top' \| 'bottom' }`                                                    | enabled, `delay: 300`   | Portal-rendered tooltips for default UI             |
+| `linkPopover` | `boolean`                                                                                                                            | `true`                  | Show link editing popover                           |
+| `colorPicker` | `boolean \| { enabled?: boolean; textColors?: ColorOption[]; backgroundColors?: ColorOption[]; renderSwatch?: ColorSwatchRenderer }` | `true`                  | Show or customize text/background color pickers     |
+
+The default toolbar and bubble menu expose paragraph plus heading levels H1-H4. The underlying document model accepts heading levels 1-6, so apps can add H5/H6 through the command registries if their product needs them.
 
 ### `editorOptions.features`
 
@@ -261,21 +312,21 @@ This package does **not** replace server-side validation, upload security, or bu
 
 The package exposes only documented entry points. Prefer focused subpaths for app code; use `/react` when you want the shortest full-editor import.
 
-| Entry point                             | Public API                                                                                                  | Use when                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `@namelesserlx/editor/react`            | `Editor`, `EditorRoot`, `useEditorController`                                                               | You want the quickest full editor import                        |
-| `@namelesserlx/editor/react/controller` | `useEditorController`; `EditorController`, `EditorUpdateMeta`, `UseEditorControllerOptions` types           | You need the controller hook without importing default UI       |
-| `@namelesserlx/editor/react/editor`     | `Editor`, `EditorRoot`; `EditorProps`, `AnyEditorProps` types                                               | You need the React editor component                             |
-| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`, `ReadonlyHtml`, `ReadonlyRenderer`; readonly option/prop types                        | You render content pages, SSR, previews, or cached display HTML |
-| `@namelesserlx/editor/core/model`       | `createEmptyDocument`, `createNormalizeOptions`, `isEditorJson`, `normalizeEditorJson`; model-related types | You only need JSON document model helpers                       |
-| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`, `createLowlight`, `createLowlightRegistry`, `IframeEmbed`; extension option types | You configure or share the built-in Tiptap extension stack      |
-| `@namelesserlx/editor/core`             | Content helpers plus model and extension APIs                                                               | You need the complete core surface                              |
-| `@namelesserlx/editor/format`           | `importContent`, `exportContent`, `importHtml`, `exportHtml`, `importMarkdown`, `exportMarkdown`            | You convert HTML / Markdown / JSON directly                     |
-| `@namelesserlx/editor/security`         | `sanitizeHtml`, `sanitizeUrl`; policy types                                                                 | You need URL or HTML safety helpers                             |
-| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`, `SUPPORTED_EDITOR_LOCALES`; locale types                                           | You need supported locale metadata                              |
-| `@namelesserlx/editor/ui`               | Default UI primitives such as `BubbleMenuSelect`                                                            | You compose with the built-in UI pieces                         |
-| `@namelesserlx/editor`                  | Lightweight top-level convenience exports from core, format, i18n, and security                             | Prefer subpaths for predictable bundles                         |
-| `@namelesserlx/editor/style.css`        | Default CSS                                                                                                 | You use the built-in editor or readonly styles                  |
+| Entry point                             | Public API                                                                                                                                                                  | Use when                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `@namelesserlx/editor/react`            | `Editor`, `EditorRoot`, `useEditorController`                                                                                                                               | You want the quickest full editor import                        |
+| `@namelesserlx/editor/react/controller` | `useEditorController`; `EditorController`, `EditorUpdateMeta`, `UseEditorControllerOptions` types                                                                           | You need the controller hook without importing default UI       |
+| `@namelesserlx/editor/react/editor`     | `Editor`, `EditorRoot`; `EditorProps`, `AnyEditorProps` types                                                                                                               | You need the React editor component                             |
+| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`, `ReadonlyHtml`, `ReadonlyRenderer`; readonly option/prop types                                                                                        | You render content pages, SSR, previews, or cached display HTML |
+| `@namelesserlx/editor/core/model`       | `createEmptyDocument`, `createNormalizeOptions`, `isEditorJson`, `normalizeEditorJson`; model-related types                                                                 | You only need JSON document model helpers                       |
+| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`, `createLowlight`, `createLowlightRegistry`, `IframeEmbed`; extension option types                                                                 | You configure or share the built-in Tiptap extension stack      |
+| `@namelesserlx/editor/core`             | Content helpers plus model and extension APIs                                                                                                                               | You need the complete core surface                              |
+| `@namelesserlx/editor/format`           | `importContent`, `exportContent`, `importHtml`, `exportHtml`, `importMarkdown`, `exportMarkdown`                                                                            | You convert HTML / Markdown / JSON directly                     |
+| `@namelesserlx/editor/security`         | `sanitizeHtml`, `sanitizeUrl`; policy types                                                                                                                                 | You need URL or HTML safety helpers                             |
+| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`, `SUPPORTED_EDITOR_LOCALES`; locale types                                                                                                           | You need supported locale metadata                              |
+| `@namelesserlx/editor/ui`               | Default UI primitives, command registries, and color types such as `DEFAULT_BUBBLE_MENU_COMMANDS`, `BubbleMenuCommand`, `ColorOption`, `BubbleMenuSelect`, `TooltipTrigger` | You compose with the built-in UI pieces                         |
+| `@namelesserlx/editor`                  | Lightweight top-level convenience exports from core, format, i18n, and security                                                                                             | Prefer subpaths for predictable bundles                         |
+| `@namelesserlx/editor/style.css`        | Default CSS                                                                                                                                                                 | You use the built-in editor or readonly styles                  |
 
 ---
 

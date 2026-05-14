@@ -1,7 +1,7 @@
 import { Schema } from '@tiptap/pm/model';
 import { EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { describe, expect, it } from 'vitest';
-import { defaultBubbleMenuShouldShow } from '../../src/ui/DefaultBubbleMenu';
+import { defaultBubbleMenuShouldShow } from '../../src/ui/menus/DefaultBubbleMenu';
 import { resolveEditorUiOptions } from '../../src/ui/types';
 
 const schema = new Schema({

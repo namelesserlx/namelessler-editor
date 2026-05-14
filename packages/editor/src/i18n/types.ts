@@ -19,6 +19,7 @@ export interface EditorMessages {
         heading1: string;
         heading2: string;
         heading3: string;
+        heading4: string;
         paragraph: string;
         textColor: string;
         backgroundColor: string;

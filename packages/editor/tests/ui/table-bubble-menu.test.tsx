@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TableBubbleMenu } from '../../src/ui/TableBubbleMenu';
+import { TableBubbleMenu } from '../../src/ui/menus/TableBubbleMenu';
+import { EditorTooltipProvider } from '../../src/ui/tooltip/EditorTooltipProvider';
 
 type Listener = () => void;
 
@@ -114,6 +115,11 @@ describe('TableBubbleMenu', () => {
             root.unmount();
         });
         container.remove();
+        document.body
+            .querySelectorAll('[data-nameless-editor-tooltip-portal="true"]')
+            .forEach((node) => {
+                node.remove();
+            });
     });
 
     it('opens when the pointer hovers a table without requiring the editor selection to be inside it', () => {
@@ -139,6 +145,42 @@ describe('TableBubbleMenu', () => {
         expect(menu).not.toBeNull();
         expect(menu?.style.left).toBe('144px');
         expect(menu?.style.top).toBe('72px');
+    });
+
+    it('shows tooltips for controls rendered inside the table bubble menu portal', () => {
+        const { editorDom, cell } = createEditorDom();
+        const editor = createEditorMock(editorDom);
+
+        act(() => {
+            root.render(
+                <EditorTooltipProvider delay={0}>
+                    <TableBubbleMenu editor={editor as never} locale="en-US" />
+                </EditorTooltipProvider>,
+            );
+        });
+
+        act(() => {
+            cell.dispatchEvent(
+                new MouseEvent('mousemove', {
+                    bubbles: true,
+                    clientX: 32,
+                    clientY: 96,
+                }),
+            );
+        });
+
+        const addColumnBeforeButton = document.body.querySelector<HTMLButtonElement>(
+            '.nlx-editor-table-bubble-menu [aria-label="Add column left"]',
+        );
+        expect(addColumnBeforeButton).not.toBeNull();
+
+        act(() => {
+            addColumnBeforeButton?.dispatchEvent(new Event('pointerover', { bubbles: true }));
+        });
+
+        const tooltip = document.body.querySelector<HTMLElement>('[role="tooltip"]');
+        expect(tooltip).not.toBeNull();
+        expect(tooltip?.textContent).toBe('Add column left');
     });
 
     it('does not recalculate table state on content-only editor updates', async () => {

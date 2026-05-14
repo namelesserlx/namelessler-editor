@@ -2,9 +2,10 @@ import type { Editor as TiptapEditor } from '@tiptap/react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../i18n';
-import { TooltipMenuButton } from './MenuButton';
-import { useEditorSnapshot } from './useEditorSnapshot';
+import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../../i18n';
+import { TooltipMenuButton } from '../components/MenuButton';
+import { useEditorSnapshot } from '../hooks/useEditorSnapshot';
+import { EDITOR_TOOLTIP_SCOPE_ATTRIBUTE, useEditorTooltipScopeId } from '../tooltip/TooltipTrigger';
 
 export interface TableBubbleMenuProps {
     editor: TiptapEditor;
@@ -57,6 +58,7 @@ export function TableBubbleMenu({
 }: TableBubbleMenuProps) {
     useEditorSnapshot(editor, { update: false });
     const messages = resolveEditorMessages(locale);
+    const tooltipScopeId = useEditorTooltipScopeId();
 
     const [menuStyle, setMenuStyle] = useState<{ left: number; top: number } | null>(null);
     const hoveredTableRef = useRef<HTMLElement | null>(null);
@@ -167,6 +169,10 @@ export function TableBubbleMenu({
         <div
             ref={menuRef}
             className="nlx-editor-table-bubble-menu"
+            data-nameless-editor-table-bubble-menu="true"
+            {...{ [EDITOR_TOOLTIP_SCOPE_ATTRIBUTE]: tooltipScopeId ?? undefined }}
+            role="toolbar"
+            aria-label={messages.toolbar.table}
             style={zIndex === undefined ? menuStyle : { ...menuStyle, zIndex }}
             onMouseLeave={(event) => {
                 if (containsTarget(hoveredTableRef.current, event.relatedTarget)) return;

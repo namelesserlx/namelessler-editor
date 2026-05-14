@@ -199,23 +199,74 @@ export function App() {
 <Editor
   controller={controller}
   ui={{
-    toolbar: true,
+    toolbar: {
+      enabled: true,
+      commands: (defaults) => defaults.filter((command) => command.id !== 'heading-3'),
+      slots: [
+        {
+          key: 'ai',
+          placement: 'end',
+          render: () => <button type="button">AI</button>,
+        },
+      ],
+    },
     bubbleMenu: {
       enabled: true,
       zIndex: 9999,
+      commands: (defaults) => [
+        ...defaults.filter((command) => command.id !== 'blockquote'),
+        {
+          id: 'ai-polish',
+          group: 'ai',
+          render: ({ activePopover, closePopovers, setPopoverOpen }) => (
+            <span>
+              <button
+                type="button"
+                aria-expanded={activePopover === 'ai-polish'}
+                onClick={() => setPopoverOpen('ai-polish')(activePopover !== 'ai-polish')}
+              >
+                AI
+              </button>
+              {activePopover === 'ai-polish' ? (
+                <span role="dialog">
+                  自定义 AI 操作
+                  <button type="button" onClick={closePopovers}>
+                    关闭
+                  </button>
+                </span>
+              ) : null}
+            </span>
+          ),
+        },
+      ],
+    },
+    tooltip: {
+      enabled: true,
+      delay: 300,
+      placement: 'top',
     },
     linkPopover: true,
-    colorPicker: true,
+    colorPicker: {
+      enabled: true,
+      textColors: [
+        { key: 'clear', label: '清除', value: null },
+        { key: 'brand', label: '品牌色', value: '#6d28d9' },
+      ],
+      renderSwatch: ({ label }) => <span>{label}</span>,
+    },
   }}
 />
 ```
 
-| 选项          | 类型                                                                 | 默认值               | 描述                        |
-| ------------- | -------------------------------------------------------------------- | -------------------- | --------------------------- |
-| `toolbar`     | `boolean`                                                            | `true`               | 是否显示默认工具栏          |
-| `bubbleMenu`  | `boolean \| { enabled?: boolean; zIndex?: number; shouldShow?: fn }` | 启用，`zIndex: 9999` | 控制选区浮层菜单            |
-| `linkPopover` | `boolean`                                                            | `true`               | 是否显示链接编辑浮层        |
-| `colorPicker` | `boolean`                                                            | `true`               | 是否显示文字 / 背景色选择器 |
+| 选项          | 类型                                                                                                                                 | 默认值               | 描述                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------- | ---------------------------------- |
+| `toolbar`     | `boolean \| { enabled?: boolean; commands?: registry; slots?: ToolbarSlot[] }`                                                       | `true`               | 显示、移除、重排或扩展默认工具栏   |
+| `bubbleMenu`  | `boolean \| { enabled?: boolean; zIndex?: number; shouldShow?: fn; commands?: registry }`                                            | 启用，`zIndex: 9999` | 显示、移除、重排或扩展选区菜单命令 |
+| `tooltip`     | `boolean \| { enabled?: boolean; delay?: number; placement?: 'top' \| 'bottom' }`                                                    | 启用，`delay: 300`   | 默认 UI 的 portal 悬浮提示         |
+| `linkPopover` | `boolean`                                                                                                                            | `true`               | 是否显示链接编辑浮层               |
+| `colorPicker` | `boolean \| { enabled?: boolean; textColors?: ColorOption[]; backgroundColors?: ColorOption[]; renderSwatch?: ColorSwatchRenderer }` | `true`               | 显示或自定义文字 / 背景色选择器    |
+
+默认 toolbar 和 bubble menu 会提供正文以及 H1-H4 标题。底层文档模型支持 1-6 级标题，如果业务产品需要 H5/H6，可以通过 command registry 自行加入。
 
 ### `editorOptions.features`
 
@@ -261,21 +312,21 @@ export function App() {
 
 这个包只暴露文档中列出的公开入口。业务代码优先使用明确子路径；如果你想最短路径接入完整编辑器，可以使用 `/react`。
 
-| 入口                                    | 公开 API                                                                                                | 适用场景                                       |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `@namelesserlx/editor/react`            | `Editor`、`EditorRoot`、`useEditorController`                                                           | 想用最短路径接入完整编辑器                     |
-| `@namelesserlx/editor/react/controller` | `useEditorController`；`EditorController`、`EditorUpdateMeta`、`UseEditorControllerOptions` 类型        | 只需要 controller hook，不希望引入默认 UI 图谱 |
-| `@namelesserlx/editor/react/editor`     | `Editor`、`EditorRoot`；`EditorProps`、`AnyEditorProps` 类型                                            | 只需要 React 编辑器组件                        |
-| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`、`ReadonlyHtml`、`ReadonlyRenderer`；只读渲染相关类型                              | 内容页、SSR、预览或缓存展示 HTML               |
-| `@namelesserlx/editor/core/model`       | `createEmptyDocument`、`createNormalizeOptions`、`isEditorJson`、`normalizeEditorJson`；模型相关类型    | 只需要 JSON 文档模型工具                       |
-| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`、`createLowlight`、`createLowlightRegistry`、`IframeEmbed`；extension 配置类型 | 配置或复用内置 Tiptap extension 栈             |
-| `@namelesserlx/editor/core`             | 内容工具，以及 model / extensions 能力                                                                  | 需要完整 core 能力                             |
-| `@namelesserlx/editor/format`           | `importContent`、`exportContent`、`importHtml`、`exportHtml`、`importMarkdown`、`exportMarkdown`        | 直接做 HTML / Markdown / JSON 转换             |
-| `@namelesserlx/editor/security`         | `sanitizeHtml`、`sanitizeUrl`；安全策略类型                                                             | 需要 HTML 或 URL 安全辅助能力                  |
-| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`、`SUPPORTED_EDITOR_LOCALES`；locale 类型                                        | 需要支持语言元信息                             |
-| `@namelesserlx/editor/ui`               | `BubbleMenuSelect` 等默认 UI primitives                                                                 | 组合内置 UI 组件                               |
-| `@namelesserlx/editor`                  | core、format、i18n、security 的轻量顶层便捷导出                                                         | 推荐优先使用子路径来获得可预测 bundle          |
-| `@namelesserlx/editor/style.css`        | 默认 CSS                                                                                                | 使用内置编辑器或只读样式                       |
+| 入口                                    | 公开 API                                                                                                                                                | 适用场景                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `@namelesserlx/editor/react`            | `Editor`、`EditorRoot`、`useEditorController`                                                                                                           | 想用最短路径接入完整编辑器                     |
+| `@namelesserlx/editor/react/controller` | `useEditorController`；`EditorController`、`EditorUpdateMeta`、`UseEditorControllerOptions` 类型                                                        | 只需要 controller hook，不希望引入默认 UI 图谱 |
+| `@namelesserlx/editor/react/editor`     | `Editor`、`EditorRoot`；`EditorProps`、`AnyEditorProps` 类型                                                                                            | 只需要 React 编辑器组件                        |
+| `@namelesserlx/editor/readonly`         | `renderReadonlyHtml`、`ReadonlyHtml`、`ReadonlyRenderer`；只读渲染相关类型                                                                              | 内容页、SSR、预览或缓存展示 HTML               |
+| `@namelesserlx/editor/core/model`       | `createEmptyDocument`、`createNormalizeOptions`、`isEditorJson`、`normalizeEditorJson`；模型相关类型                                                    | 只需要 JSON 文档模型工具                       |
+| `@namelesserlx/editor/core/extensions`  | `createEditorExtensions`、`createLowlight`、`createLowlightRegistry`、`IframeEmbed`；extension 配置类型                                                 | 配置或复用内置 Tiptap extension 栈             |
+| `@namelesserlx/editor/core`             | 内容工具，以及 model / extensions 能力                                                                                                                  | 需要完整 core 能力                             |
+| `@namelesserlx/editor/format`           | `importContent`、`exportContent`、`importHtml`、`exportHtml`、`importMarkdown`、`exportMarkdown`                                                        | 直接做 HTML / Markdown / JSON 转换             |
+| `@namelesserlx/editor/security`         | `sanitizeHtml`、`sanitizeUrl`；安全策略类型                                                                                                             | 需要 HTML 或 URL 安全辅助能力                  |
+| `@namelesserlx/editor/i18n`             | `DEFAULT_EDITOR_LOCALE`、`SUPPORTED_EDITOR_LOCALES`；locale 类型                                                                                        | 需要支持语言元信息                             |
+| `@namelesserlx/editor/ui`               | 默认 UI primitives、命令注册表与颜色类型，例如 `DEFAULT_BUBBLE_MENU_COMMANDS`、`BubbleMenuCommand`、`ColorOption`、`BubbleMenuSelect`、`TooltipTrigger` | 组合内置 UI 组件                               |
+| `@namelesserlx/editor`                  | core、format、i18n、security 的轻量顶层便捷导出                                                                                                         | 推荐优先使用子路径来获得可预测 bundle          |
+| `@namelesserlx/editor/style.css`        | 默认 CSS                                                                                                                                                | 使用内置编辑器或只读样式                       |
 
 ---
 

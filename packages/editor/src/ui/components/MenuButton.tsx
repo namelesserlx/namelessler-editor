@@ -1,4 +1,5 @@
 import React from 'react';
+import { TooltipTrigger } from '../tooltip/TooltipTrigger';
 
 export interface MenuButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     active?: boolean;
@@ -53,10 +54,10 @@ export function TooltipMenuButton({
     const resolvedTooltip = tooltip ?? resolvedLabel;
 
     return (
-        <span className="nlx-editor-tooltip-host" data-tooltip={resolvedTooltip}>
+        <TooltipTrigger label={resolvedTooltip}>
             <MenuButton aria-label={resolvedLabel} {...buttonProps}>
                 {children}
             </MenuButton>
-        </span>
+        </TooltipTrigger>
     );
 }

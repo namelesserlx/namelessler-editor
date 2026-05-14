@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { Link2, Unlink } from 'lucide-react';
-import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../i18n';
-import { sanitizeUrl } from '../security/urlPolicy';
-import { MenuButton } from './MenuButton';
+import { DEFAULT_EDITOR_LOCALE, resolveEditorMessages, type EditorLocale } from '../../i18n';
+import { sanitizeUrl } from '../../security/urlPolicy';
+import { MenuButton } from '../components/MenuButton';
+import { EDITOR_TOOLTIP_SCOPE_ATTRIBUTE, useEditorTooltipScopeId } from '../tooltip/TooltipTrigger';
+import { usePopoverDismiss } from './usePopoverDismiss';
 
 export interface LinkPopoverProps {
     editor: TiptapEditor;
@@ -37,12 +39,17 @@ export function LinkPopover({
     open: controlledOpen,
     onOpenChange,
 }: LinkPopoverProps) {
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const popoverRef = useRef<HTMLSpanElement | null>(null);
+    const popoverId = useId();
+    const tooltipScopeId = useEditorTooltipScopeId();
     const messages = resolveEditorMessages(locale);
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const open = controlledOpen ?? uncontrolledOpen;
     const [href, setHref] = useState('');
     const [hasExistingLink, setHasExistingLink] = useState(false);
     const openedSelectionKeyRef = useRef<string | undefined>(undefined);
+    const dismissRefs = useMemo(() => [triggerRef, popoverRef], []);
 
     useEffect(() => {
         if (!open || !openedSelectionKeyRef.current) {
@@ -60,7 +67,7 @@ export function LinkPopover({
         }
     }, [controlledOpen, onOpenChange, open, selectionKey]);
 
-    const closePopover = () => {
+    const closePopover = useCallback(() => {
         if (controlledOpen === undefined) {
             setUncontrolledOpen(false);
         }
@@ -68,7 +75,13 @@ export function LinkPopover({
         setHref('');
         setHasExistingLink(false);
         openedSelectionKeyRef.current = undefined;
-    };
+    }, [controlledOpen, onOpenChange]);
+
+    usePopoverDismiss({
+        open,
+        onClose: closePopover,
+        refs: dismissRefs,
+    });
 
     const openPopover = () => {
         const currentHref = (editor.getAttributes('link').href as string | undefined) ?? '';
@@ -97,11 +110,16 @@ export function LinkPopover({
         <span
             className="nlx-editor-popover-host nlx-editor-tooltip-host"
             data-popover-open={open ? 'true' : undefined}
-            data-tooltip={messages.toolbar.link}
+            data-nameless-editor-tooltip={messages.toolbar.link}
+            {...{ [EDITOR_TOOLTIP_SCOPE_ATTRIBUTE]: tooltipScopeId ?? undefined }}
         >
             <MenuButton
+                ref={triggerRef}
                 active={editor.isActive('link') || open}
                 aria-label={messages.toolbar.link}
+                aria-controls={open ? popoverId : undefined}
+                aria-expanded={open}
+                aria-haspopup="dialog"
                 onClick={() => {
                     if (open) {
                         closePopover();
@@ -115,6 +133,10 @@ export function LinkPopover({
             </MenuButton>
             {open ? (
                 <span
+                    id={popoverId}
+                    ref={popoverRef}
+                    role="dialog"
+                    aria-label={messages.toolbar.link}
                     className="nlx-editor-popover nlx-editor-link-popover"
                     data-nameless-editor-link-popover="true"
                     onMouseDown={(event) => event.stopPropagation()}

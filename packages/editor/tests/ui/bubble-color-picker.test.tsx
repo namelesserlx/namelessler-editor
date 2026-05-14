@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BubbleColorPicker } from '../../src/ui/BubbleColorPicker';
+import { BubbleColorPicker } from '../../src/ui/popovers/BubbleColorPicker';
 
 function createEditorMock() {
     const chainApi = {
@@ -112,5 +112,48 @@ describe('BubbleColorPicker', () => {
 
         expect(violetTextSwatch?.getAttribute('title')).toBeNull();
         expect(violetTextSwatch?.getAttribute('aria-label')).toBe('紫色');
+    });
+
+    it('accepts external text/background colors and custom swatch rendering', () => {
+        const { editor, chainApi } = createEditorMock();
+
+        act(() => {
+            root.render(
+                <BubbleColorPicker
+                    editor={editor as never}
+                    locale="en-US"
+                    open
+                    textColors={[
+                        { key: 'clear', label: 'No text color', value: null },
+                        { key: 'brandText', label: 'Brand text', value: '#5b21b6' },
+                    ]}
+                    backgroundColors={[
+                        { key: 'brandBg', label: 'Brand background', value: '#ede9fe' },
+                    ]}
+                    renderSwatch={({ mode, option }) => (
+                        <span data-custom-bubble-swatch={`${mode}-${option.key}`} />
+                    )}
+                />,
+            );
+        });
+
+        expect(
+            container.querySelectorAll('[data-nameless-editor-bubble-color-swatch-mode="text"]'),
+        ).toHaveLength(2);
+        expect(
+            container.querySelectorAll(
+                '[data-nameless-editor-bubble-color-swatch-mode="background"]',
+            ),
+        ).toHaveLength(1);
+        expect(
+            container.querySelector('[data-custom-bubble-swatch="background-brandBg"]'),
+        ).not.toBeNull();
+
+        act(() => {
+            container.querySelector<HTMLButtonElement>('[aria-label="Brand background"]')?.click();
+        });
+
+        expect(chainApi.setHighlight).toHaveBeenCalledWith({ color: '#ede9fe' });
+        expect(chainApi.run).toHaveBeenCalledTimes(1);
     });
 });

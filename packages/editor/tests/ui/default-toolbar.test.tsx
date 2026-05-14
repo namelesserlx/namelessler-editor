@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DefaultToolbar } from '../../src/ui/DefaultToolbar';
+import { DefaultToolbar } from '../../src/ui/toolbar/DefaultToolbar';
+import type { ToolbarCommand } from '../../src/ui/toolbar/toolbarCommands';
 
 type Listener = () => void;
 
@@ -104,13 +105,14 @@ describe('DefaultToolbar', () => {
         for (const button of buttons) {
             const tooltipHost = button.closest('.nlx-editor-tooltip-host');
             expect(tooltipHost).not.toBeNull();
-            expect(tooltipHost?.getAttribute('data-tooltip')).toBeTruthy();
+            expect(tooltipHost?.getAttribute('data-nameless-editor-tooltip')).toBeTruthy();
         }
 
-        expect(toolbar?.querySelector('[data-tooltip="正文"]')).not.toBeNull();
-        expect(toolbar?.querySelector('[data-tooltip="标题 1"]')).not.toBeNull();
-        expect(toolbar?.querySelector('[data-tooltip="加粗"]')).not.toBeNull();
-        expect(toolbar?.querySelector('[data-tooltip="撤销"]')).not.toBeNull();
+        expect(toolbar?.querySelector('[data-nameless-editor-tooltip="正文"]')).not.toBeNull();
+        expect(toolbar?.querySelector('[data-nameless-editor-tooltip="标题 1"]')).not.toBeNull();
+        expect(toolbar?.querySelector('[data-nameless-editor-tooltip="标题 4"]')).not.toBeNull();
+        expect(toolbar?.querySelector('[data-nameless-editor-tooltip="加粗"]')).not.toBeNull();
+        expect(toolbar?.querySelector('[data-nameless-editor-tooltip="撤销"]')).not.toBeNull();
     });
 
     it('does not render a dead link button when the link popover is disabled', () => {
@@ -150,5 +152,66 @@ describe('DefaultToolbar', () => {
         });
 
         expect(editor.isActive.mock.calls.length).toBeGreaterThan(activeChecksAfterRender);
+    });
+
+    it('supports toolbar slots and command registry overrides', () => {
+        const editor = createEditorMock();
+        const customCommand = vi.fn();
+        const customCommands = (defaults: ToolbarCommand[]): ToolbarCommand[] => [
+            ...defaults.filter((command) => command.id !== 'heading-3'),
+            {
+                id: 'custom-action',
+                group: 'history',
+                render: () => (
+                    <button
+                        type="button"
+                        data-nameless-editor-custom-toolbar-command="true"
+                        onClick={customCommand}
+                    >
+                        Custom
+                    </button>
+                ),
+            },
+        ];
+
+        act(() => {
+            root.render(
+                <DefaultToolbar
+                    editor={editor as never}
+                    locale="en-US"
+                    commands={customCommands}
+                    slots={[
+                        {
+                            key: 'before',
+                            placement: 'start',
+                            render: () => (
+                                <span data-nameless-editor-toolbar-slot="start">Start</span>
+                            ),
+                        },
+                        {
+                            key: 'after',
+                            placement: 'end',
+                            render: () => <span data-nameless-editor-toolbar-slot="end">End</span>,
+                        },
+                    ]}
+                />,
+            );
+        });
+
+        expect(container.querySelector('[aria-label="Heading 3"]')).toBeNull();
+        expect(
+            container.querySelector('[data-nameless-editor-toolbar-slot="start"]'),
+        ).not.toBeNull();
+        expect(container.querySelector('[data-nameless-editor-toolbar-slot="end"]')).not.toBeNull();
+
+        act(() => {
+            container
+                .querySelector<HTMLButtonElement>(
+                    '[data-nameless-editor-custom-toolbar-command="true"]',
+                )
+                ?.click();
+        });
+
+        expect(customCommand).toHaveBeenCalledTimes(1);
     });
 });

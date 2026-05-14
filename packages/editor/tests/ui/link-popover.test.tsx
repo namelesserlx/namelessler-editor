@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LinkPopover } from '../../src/ui/LinkPopover';
+import { LinkPopover } from '../../src/ui/popovers/LinkPopover';
 
 function createEditorMock(href = '') {
     const run = vi.fn();
@@ -139,5 +139,36 @@ describe('LinkPopover', () => {
 
         expect(container.querySelector('[data-nameless-editor-link-remove="true"]')).not.toBeNull();
         expect(container.querySelector('[data-nameless-editor-link-cancel="true"]')).toBeNull();
+    });
+
+    it('exposes dialog semantics and closes on outside click', () => {
+        const { editor } = createEditorMock();
+        const onOpenChange = vi.fn();
+
+        act(() => {
+            root.render(
+                <LinkPopover
+                    editor={editor as never}
+                    locale="en-US"
+                    selectionKey="1:8"
+                    open
+                    onOpenChange={onOpenChange}
+                />,
+            );
+        });
+
+        const trigger = container.querySelector<HTMLButtonElement>('[aria-label="Link"]');
+        const dialog = container.querySelector('[role="dialog"]');
+
+        expect(trigger?.getAttribute('aria-haspopup')).toBe('dialog');
+        expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+        expect(trigger?.getAttribute('aria-controls')).toBe(dialog?.id);
+        expect(dialog).not.toBeNull();
+
+        act(() => {
+            document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+        });
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 });

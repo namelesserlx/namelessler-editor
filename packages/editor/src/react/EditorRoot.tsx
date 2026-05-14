@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { EditorContent } from '@tiptap/react';
-import { DefaultEditorUi } from '../ui/DefaultEditorUi';
+import { DefaultEditorUi } from '../ui/shell/DefaultEditorUi';
 import { useEditorController } from './useEditorController';
 import type { EditorController, EditorProps } from './types';
 

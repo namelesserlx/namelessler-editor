@@ -1,7 +1,7 @@
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ColorPicker } from '../../src/ui/ColorPicker';
+import { ColorPicker } from '../../src/ui/popovers/ColorPicker';
 
 function createEditorMock() {
     const chainApi = {
@@ -99,5 +99,78 @@ describe('ColorPicker', () => {
         const clearSwatch = container.querySelector('[aria-label="清除"]');
         expect(clearSwatch).not.toBeNull();
         expect(clearSwatch?.classList.contains('nlx-editor-color-swatch-active')).toBe(false);
+    });
+
+    it('exposes menu semantics and closes with Escape', () => {
+        const { editor } = createEditorMock();
+        const onOpenChange = vi.fn();
+
+        act(() => {
+            root.render(
+                <ColorPicker
+                    editor={editor as never}
+                    locale="en-US"
+                    mode="text"
+                    open
+                    onOpenChange={onOpenChange}
+                />,
+            );
+        });
+
+        const trigger = container.querySelector<HTMLButtonElement>('[aria-label="Text color"]');
+        const menu = container.querySelector('[role="menu"]');
+        const swatches = Array.from(container.querySelectorAll('[role="menuitemradio"]'));
+
+        expect(trigger?.getAttribute('aria-haspopup')).toBe('menu');
+        expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+        expect(trigger?.getAttribute('aria-controls')).toBe(menu?.id);
+        expect(menu).not.toBeNull();
+        expect(swatches.length).toBeGreaterThan(0);
+        expect(swatches[0].getAttribute('aria-checked')).toBe('false');
+
+        act(() => {
+            swatches[0].dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+            );
+        });
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('accepts external color options and custom swatch rendering', () => {
+        const { editor, chainApi } = createEditorMock();
+
+        act(() => {
+            root.render(
+                <ColorPicker
+                    editor={editor as never}
+                    locale="en-US"
+                    mode="text"
+                    open
+                    colors={[
+                        { key: 'clear', label: 'No color', value: null },
+                        { key: 'brand', label: 'Brand purple', value: '#6d28d9' },
+                    ]}
+                    renderSwatch={({ active, label, option }) => (
+                        <span data-custom-swatch={option.key}>
+                            {active ? 'selected ' : ''}
+                            {label}
+                        </span>
+                    )}
+                />,
+            );
+        });
+
+        expect(container.querySelectorAll('[role="menuitemradio"]')).toHaveLength(2);
+        expect(container.querySelector('[data-custom-swatch="brand"]')?.textContent).toBe(
+            'Brand purple',
+        );
+
+        act(() => {
+            container.querySelector<HTMLButtonElement>('[aria-label="Brand purple"]')?.click();
+        });
+
+        expect(chainApi.setColor).toHaveBeenCalledWith('#6d28d9');
+        expect(chainApi.run).toHaveBeenCalledTimes(1);
     });
 });
