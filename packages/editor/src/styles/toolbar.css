@@ -1,0 +1,91 @@
+.nlx-editor-toolbar {
+    align-items: center;
+    background: var(--nlx-color-bg);
+    border: 1px solid var(--nlx-color-border);
+    border-radius: var(--nlx-radius-lg);
+    box-shadow: var(--nlx-shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: var(--nlx-space-2);
+    padding: 4px 6px;
+}
+
+.nlx-editor-button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--nlx-radius-md);
+    color: var(--nlx-color-text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    gap: 4px;
+    height: 28px;
+    justify-content: center;
+    line-height: 1;
+    min-width: 28px;
+    padding: 0 var(--nlx-space-2);
+    transition:
+        background-color 0.12s ease,
+        box-shadow 0.12s ease,
+        color 0.12s ease,
+        transform 0.12s ease;
+}
+
+.nlx-editor-button:hover {
+    background: var(--nlx-color-surface-hover);
+    box-shadow: 0 3px 10px rgb(15 23 42 / 10%);
+    color: var(--nlx-color-text);
+    transform: translateY(-1px);
+}
+
+.nlx-editor-button:active {
+    background: var(--nlx-color-surface-active);
+    box-shadow: none;
+    transform: translateY(0);
+}
+
+.nlx-editor-button:disabled {
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.6;
+    transform: none;
+}
+
+.nlx-editor-button:focus-visible {
+    box-shadow: var(--nlx-focus-ring);
+    outline: none;
+}
+
+.nlx-editor-button-active {
+    background: var(--nlx-color-primary-soft);
+    color: var(--nlx-color-primary);
+}
+
+.nlx-editor-button-active:hover {
+    background: var(--nlx-color-primary-soft);
+    box-shadow: none;
+    color: var(--nlx-color-primary);
+    transform: none;
+}
+
+.nlx-editor-button-with-text {
+    gap: var(--nlx-space-1);
+}
+
+.nlx-editor-toolbar-divider {
+    align-self: center;
+    background: var(--nlx-color-border);
+    display: inline-block;
+    height: 16px;
+    margin-inline: 4px;
+    width: 1px;
+}
+
+.nlx-editor-toolbar-group,
+.nlx-editor-toolbar-slot {
+    align-items: center;
+    display: inline-flex;
+    gap: 2px;
+}

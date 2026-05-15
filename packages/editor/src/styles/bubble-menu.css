@@ -1,0 +1,202 @@
+.nlx-editor-bubble-menu {
+    align-items: stretch;
+    background: var(--nlx-color-bg);
+    border: 1px solid var(--nlx-color-border);
+    border-radius: var(--nlx-radius-lg);
+    box-shadow: var(--nlx-shadow-md);
+    display: inline-flex;
+    flex-direction: column;
+    overflow: visible;
+    padding: 0;
+    position: relative;
+    z-index: 1010;
+}
+
+.nlx-editor-bubble-menu-content {
+    align-items: center;
+    border-radius: inherit;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+}
+
+.nlx-editor-menu-section {
+    align-items: center;
+    display: inline-flex;
+    gap: 2px;
+}
+
+.nlx-editor-menu-divider {
+    align-self: center;
+    background: var(--nlx-color-border);
+    display: inline-block;
+    flex-shrink: 0;
+    height: 16px;
+    margin: 0 4px;
+    width: 1px;
+}
+
+.nlx-editor-bubble-menu-select-trigger {
+    gap: 6px;
+    min-width: 0;
+    padding-inline: 10px;
+}
+
+[data-nameless-editor-bubble-color-picker-trigger='true'] {
+    min-width: 36px;
+}
+
+.nlx-editor-bubble-menu-select-trigger-content {
+    align-items: center;
+    display: inline-flex;
+    font-size: 13px;
+    gap: 6px;
+    line-height: 1;
+}
+
+.nlx-editor-bubble-menu-select-trigger-chevron {
+    color: var(--nlx-color-text-secondary);
+}
+
+.nlx-editor-bubble-menu-select-label {
+    font: inherit;
+}
+
+.nlx-editor-bubble-menu-select-popover {
+    align-items: stretch;
+    display: grid;
+    gap: 4px;
+    min-width: 150px;
+    padding: 6px;
+}
+
+.nlx-editor-bubble-menu-select-option {
+    font-size: 13px;
+    justify-content: flex-start;
+    min-width: 132px;
+    padding-inline: 10px;
+}
+
+.nlx-editor-bubble-menu-select-option:hover {
+    background: var(--nlx-color-surface-hover);
+    color: var(--nlx-color-text);
+}
+
+.nlx-editor-bubble-menu-select-popover .nlx-editor-button-active,
+.nlx-editor-bubble-menu-select-popover .nlx-editor-button-active:hover {
+    background: var(--nlx-color-primary-soft);
+    box-shadow: none;
+    color: var(--nlx-color-primary);
+    font-weight: 500;
+}
+
+.nlx-editor-bubble-menu-select-option-icon {
+    align-items: center;
+    color: currentColor;
+    display: inline-flex;
+}
+
+.nlx-editor-bubble-link-panel {
+    align-items: center;
+    background: var(--nlx-color-bg);
+    border-top: 1px solid var(--nlx-color-border);
+    border-bottom-left-radius: var(--nlx-radius-lg);
+    border-bottom-right-radius: var(--nlx-radius-lg);
+    display: flex;
+    gap: var(--nlx-space-2);
+    padding: var(--nlx-space-3);
+}
+
+.nlx-editor-bubble-link-panel .nlx-editor-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.nlx-editor-bubble-color-popover {
+    align-items: stretch;
+    display: grid;
+    gap: var(--nlx-space-3);
+    left: auto;
+    min-width: 208px;
+    padding: var(--nlx-space-3);
+    right: 0;
+}
+
+.nlx-editor-bubble-color-section {
+    display: grid;
+    gap: 10px;
+}
+
+.nlx-editor-bubble-color-section-label {
+    color: var(--nlx-color-text-secondary);
+    font-size: 13px;
+    line-height: 1;
+}
+
+.nlx-editor-bubble-color-divider {
+    background: var(--nlx-color-border);
+    display: block;
+    height: 1px;
+    width: 100%;
+}
+
+.nlx-editor-bubble-color-grid {
+    gap: 6px;
+    grid-template-columns: repeat(5, 30px);
+}
+
+.nlx-editor-bubble-color-swatch {
+    border-radius: var(--nlx-radius-md);
+    height: 30px;
+    width: 30px;
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='text'] {
+    background: var(--nlx-color-bg);
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='text']:hover {
+    background: var(--nlx-color-surface-hover);
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='text'].nlx-editor-color-swatch-active {
+    background: var(--nlx-color-primary-soft);
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='text'].nlx-editor-color-swatch-active:hover {
+    background: var(--nlx-color-primary-soft);
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='background'] {
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px rgb(15 23 42 / 6%);
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='background']:hover {
+    border-color: transparent;
+    box-shadow:
+        inset 0 0 0 1px rgb(15 23 42 / 10%),
+        0 3px 10px rgb(15 23 42 / 10%);
+}
+
+.nlx-editor-bubble-color-swatch[data-nameless-editor-bubble-color-swatch-mode='background'].nlx-editor-color-swatch-active {
+    border-color: transparent;
+    box-shadow:
+        inset 0 0 0 1px rgb(15 23 42 / 14%),
+        0 0 0 2px rgb(15 23 42 / 5%),
+        0 1px 2px rgb(15 23 42 / 8%);
+}
+
+.nlx-editor-bubble-color-swatch-clear {
+    border-style: dashed;
+    color: var(--nlx-color-text-secondary);
+}
+
+.nlx-editor-bubble-color-swatch-clear:hover {
+    border-color: rgb(100 116 139);
+    color: rgb(71 85 105);
+}

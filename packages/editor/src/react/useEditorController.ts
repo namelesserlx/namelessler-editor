@@ -68,6 +68,14 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
         [options.editorOptions, options.extensions, options.placeholder],
     );
 
+    const contentClassName = [
+        'nlx-editor-prose',
+        'nlx-editor-surface',
+        options.contentClassName ?? '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+
     const editor = useEditor({
         extensions,
         content: initialContentRef.current,
@@ -77,7 +85,7 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
         shouldRerenderOnTransaction: false,
         editorProps: {
             attributes: {
-                class: options.contentClassName ?? '',
+                class: contentClassName,
                 'data-nameless-editor-content': 'true',
             },
             transformPastedHTML: (html) => sanitizeHtml(html, latestOptionsRef.current.htmlPolicy),

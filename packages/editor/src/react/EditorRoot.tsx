@@ -30,8 +30,10 @@ const EditorView: React.FC<EditorViewProps> = ({
         editor.setEditable(!resolvedReadonly);
     }, [editor, resolvedReadonly]);
 
+    const rootClassName = ['nlx-editor-root', className ?? ''].filter(Boolean).join(' ');
+
     return (
-        <div className={className} style={style} data-nameless-editor="true">
+        <div className={rootClassName} style={style} data-nameless-editor="true">
             {editor && !resolvedReadonly ? (
                 <DefaultEditorUi
                     editor={editor}

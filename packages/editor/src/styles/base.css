@@ -1,0 +1,34 @@
+.nlx-editor-root,
+.nlx-editor-readonly {
+    color: var(--nlx-color-text);
+    font-family: var(--nlx-font-sans);
+    font-size: var(--nlx-font-size);
+    line-height: var(--nlx-line-height);
+}
+
+.nlx-editor-root {
+    position: relative;
+}
+
+.nlx-editor-surface {
+    background: var(--nlx-color-bg);
+    border: 1px solid var(--nlx-color-border);
+    border-radius: var(--nlx-radius-lg);
+    min-height: 180px;
+    outline: none;
+    padding: var(--nlx-space-4);
+}
+
+.nlx-editor-surface:focus {
+    border-color: var(--nlx-color-primary);
+    box-shadow: var(--nlx-focus-ring);
+}
+
+.nlx-editor-prose .is-editor-empty:first-child::before,
+.nlx-editor-prose .is-empty::before {
+    color: var(--nlx-color-text-muted);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}

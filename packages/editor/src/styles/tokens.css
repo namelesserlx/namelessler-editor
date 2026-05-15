@@ -1,13 +1,7 @@
-/* ==========================================================================
-   Editor Design Token System
-   Naming: --nlx-{category}-{property}
-   - All tokens defined on :root (light) and .nlx-editor-theme-dark (dark)
-   - Consumers override --nlx-* variables to customize themes
-   ========================================================================== */
+/* Editor design tokens */
 
 :root,
-.nlxt-editor-theme {
-    /* ── Typography ──────────────────────────────────────────────────────── */
+.nlx-editor-theme {
     --nlx-font-sans:
         ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --nlx-font-mono:
@@ -15,18 +9,15 @@
     --nlx-font-size: 16px;
     --nlx-line-height: 1.65;
 
-    /* ── Radii ───────────────────────────────────────────────────────────── */
     --nlx-radius-sm: 4px;
-    --nlx-radius-md: 6px;
+    --nlx-radius-md: 8px;
     --nlx-radius-lg: 10px;
 
-    /* ── Spacing ─────────────────────────────────────────────────────────── */
     --nlx-space-1: 4px;
     --nlx-space-2: 8px;
     --nlx-space-3: 12px;
     --nlx-space-4: 16px;
 
-    /* ── Semantic colors: Light ──────────────────────────────────────────── */
     --nlx-color-text: #1e293b;
     --nlx-color-text-secondary: #475569;
     --nlx-color-text-muted: #94a3b8;
@@ -38,26 +29,18 @@
     --nlx-color-primary: #1677ff;
     --nlx-color-primary-hover: #4096ff;
     --nlx-color-primary-soft: #e6f4ff;
-    --nlx-color-primary-soft-hover: #bae0ff;
     --nlx-color-danger: #b91c1c;
     --nlx-color-danger-soft: #fee2e2;
 
-    /* ── Focus ring ──────────────────────────────────────────────────────── */
     --nlx-focus-ring: 0 0 0 3px rgb(22 119 255 / 20%);
-
-    /* ── Shadows ─────────────────────────────────────────────────────────── */
     --nlx-shadow-sm: 0 8px 24px rgb(15 23 42 / 8%);
     --nlx-shadow-md: 0 18px 45px rgb(15 23 42 / 18%), 0 4px 18px rgb(15 23 42 / 8%);
 
-    /* ── Component: Blockquote ───────────────────────────────────────────── */
     --nlx-blockquote-border: var(--nlx-color-primary);
-
-    /* ── Component: Inline code ──────────────────────────────────────────── */
     --nlx-code-inline-bg: #f1f5f9;
     --nlx-code-inline-border: #e2e8f0;
     --nlx-code-inline-text: #be123c;
 
-    /* ── User palette: Text colors ───────────────────────────────────────── */
     --nlx-palette-text-slate: #0f172a;
     --nlx-palette-text-red: #dc2626;
     --nlx-palette-text-orange: #ea580c;
@@ -68,7 +51,6 @@
     --nlx-palette-text-violet: #7c3aed;
     --nlx-palette-text-pink: #db2777;
 
-    /* ── User palette: Background colors ─────────────────────────────────── */
     --nlx-palette-bg-red: #fee2e2;
     --nlx-palette-bg-orange: #ffedd5;
     --nlx-palette-bg-amber: #fef3c7;
@@ -79,13 +61,7 @@
     --nlx-palette-bg-pink: #fce7f3;
 }
 
-/* ==========================================================================
-   Dark theme
-   Activation: add class="nlx-editor-theme-dark" to a container
-   ========================================================================== */
-
 .nlx-editor-theme-dark {
-    /* ── Semantic colors: Dark ───────────────────────────────────────────── */
     --nlx-color-text: #e2e8f0;
     --nlx-color-text-secondary: #94a3b8;
     --nlx-color-text-muted: #64748b;
@@ -97,25 +73,17 @@
     --nlx-color-primary: #3b82f6;
     --nlx-color-primary-hover: #60a5fa;
     --nlx-color-primary-soft: rgb(59 130 246 / 15%);
-    --nlx-color-primary-soft-hover: rgb(59 130 246 / 25%);
     --nlx-color-danger: #f87171;
     --nlx-color-danger-soft: rgb(248 113 113 / 12%);
 
-    /* ── Focus ring ──────────────────────────────────────────────────────── */
     --nlx-focus-ring: 0 0 0 3px rgb(59 130 246 / 30%);
-
-    /* ── Shadows ─────────────────────────────────────────────────────────── */
     --nlx-shadow-sm: 0 8px 24px rgb(0 0 0 / 40%);
     --nlx-shadow-md: 0 18px 45px rgb(0 0 0 / 50%), 0 4px 18px rgb(0 0 0 / 30%);
 
-    /* ── Component tokens auto-inherit from semantic tokens above ────────── */
-
-    /* ── Component: Inline code ──────────────────────────────────────────── */
     --nlx-code-inline-bg: rgb(255 255 255 / 8%);
     --nlx-code-inline-border: rgb(255 255 255 / 10%);
     --nlx-code-inline-text: #fda4af;
 
-    /* ── User palette: Text colors (lighter for dark bg) ─────────────────── */
     --nlx-palette-text-slate: #e2e8f0;
     --nlx-palette-text-red: #fca5a5;
     --nlx-palette-text-orange: #fdba74;
@@ -126,7 +94,6 @@
     --nlx-palette-text-violet: #c4b5fd;
     --nlx-palette-text-pink: #f9a8d4;
 
-    /* ── User palette: Background colors (translucent for dark bg) ───────── */
     --nlx-palette-bg-red: rgb(254 226 226 / 16%);
     --nlx-palette-bg-orange: rgb(255 237 213 / 16%);
     --nlx-palette-bg-amber: rgb(254 243 199 / 16%);

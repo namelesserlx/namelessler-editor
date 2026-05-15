@@ -66,9 +66,13 @@ export function renderReadonlyHtml<Format extends EditorFormat = 'json'>(
 }
 
 export function ReadonlyHtml({ html, className }: ReadonlyHtmlProps) {
+    const resolvedClassName = ['nlx-editor-prose', 'nlx-editor-readonly', className ?? '']
+        .filter(Boolean)
+        .join(' ');
+
     return (
         <div
-            className={className}
+            className={resolvedClassName}
             data-nameless-editor-readonly="true"
             dangerouslySetInnerHTML={{ __html: html }}
         />

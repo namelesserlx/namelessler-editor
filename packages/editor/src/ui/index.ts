@@ -1,4 +1,4 @@
-import '../styles/default.css';
+import '../style.css';
 
 export { ColorPicker } from './popovers/ColorPicker';
 export type { ColorPickerProps } from './popovers/ColorPicker';

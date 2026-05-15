@@ -12,7 +12,11 @@ export interface TooltipMenuButtonProps extends MenuButtonProps {
 }
 
 export const MenuButton = React.forwardRef<HTMLButtonElement, MenuButtonProps>(
-    ({ active = false, withText = false, className, onMouseDown, children, ...rest }, ref) => {
+    (
+        { active = false, withText = false, className, onClick, onMouseDown, children, ...rest },
+        ref,
+    ) => {
+        const suppressClickRef = React.useRef(false);
         const classes = [
             'nlx-editor-button',
             active ? 'nlx-editor-button-active' : '',
@@ -30,6 +34,22 @@ export const MenuButton = React.forwardRef<HTMLButtonElement, MenuButtonProps>(
                 onMouseDown={(e) => {
                     e.preventDefault();
                     onMouseDown?.(e);
+                    if (e.button !== 0 || rest.disabled) {
+                        return;
+                    }
+
+                    // Trigger editor commands on mouse down so the browser doesn't get a chance
+                    // to drift the current text selection before the command runs.
+                    suppressClickRef.current = true;
+                    onClick?.(e as unknown as React.MouseEvent<HTMLButtonElement>);
+                }}
+                onClick={(e) => {
+                    if (suppressClickRef.current) {
+                        suppressClickRef.current = false;
+                        return;
+                    }
+
+                    onClick?.(e);
                 }}
                 {...rest}
             >

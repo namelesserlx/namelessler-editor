@@ -1,0 +1,25 @@
+.column-resize-handle {
+    background-color: var(--nlx-color-primary, #3b82f6);
+    bottom: 0;
+    cursor: col-resize;
+    pointer-events: none;
+    position: absolute;
+    right: -2px;
+    top: 0;
+    width: 4px;
+    z-index: 20;
+}
+
+.nlx-editor-table-bubble-menu {
+    background: var(--nlx-color-bg);
+    border: 1px solid var(--nlx-color-border);
+    border-radius: var(--nlx-radius-lg);
+    box-shadow: var(--nlx-shadow-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px 6px;
+    position: fixed;
+    transform: translate(-50%, -100%);
+    z-index: 1010;
+}

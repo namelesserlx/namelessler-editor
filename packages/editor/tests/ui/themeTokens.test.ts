@@ -22,10 +22,12 @@ describe('theme tokens', () => {
         expect(tokens).toContain('--nlx-color-border');
     });
 
-    it('uses nlx-editor-theme-dark as the dark mode class', () => {
+    it('uses corrected nlx theme scope names', () => {
         const tokens = readFileSync(resolve(__dirname, '../../src/styles/tokens.css'), 'utf8');
 
+        expect(tokens).toContain('.nlx-editor-theme');
         expect(tokens).toContain('.nlx-editor-theme-dark');
+        expect(tokens).not.toContain('.nlxt-editor-theme');
         expect(tokens).not.toContain('.ck-theme-dark');
     });
 
