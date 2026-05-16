@@ -11,6 +11,7 @@ import {
 import { sanitizeHtml } from '../security/htmlPolicy';
 import type { EditorFormat, EditorValue } from '../core/types';
 import type { EditorController, EditorUpdateMeta, UseEditorControllerOptions } from './types';
+import { createMarkdownPasteHandler } from './markdownPaste';
 
 function resolveContentFormat(format: EditorFormat | undefined): EditorFormat {
     return format ?? 'json';
@@ -20,6 +21,10 @@ function useLatestRef<T>(value: T) {
     const ref = useRef(value);
     ref.current = value;
     return ref;
+}
+
+function isMarkdownPasteEnabled(options: UseEditorControllerOptions): boolean {
+    return options.markdownPaste ?? true;
 }
 
 export function useEditorController(options: UseEditorControllerOptions = {}): EditorController {
@@ -68,6 +73,22 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
         [options.editorOptions, options.extensions, options.placeholder],
     );
 
+    const getLatestFormatOptions = useCallback(() => {
+        const currentOptions = latestOptionsRef.current;
+
+        return {
+            extensions: currentOptions.extensions,
+            editorOptions: currentOptions.editorOptions,
+            attributeSanitizers: currentOptions.attributeSanitizers,
+            htmlPolicy: currentOptions.htmlPolicy,
+        };
+    }, [latestOptionsRef]);
+
+    const getMarkdownPasteEnabled = useCallback(
+        () => isMarkdownPasteEnabled(latestOptionsRef.current),
+        [latestOptionsRef],
+    );
+
     const contentClassName = [
         'nlx-editor-prose',
         'nlx-editor-surface',
@@ -89,6 +110,9 @@ export function useEditorController(options: UseEditorControllerOptions = {}): E
                 'data-nameless-editor-content': 'true',
             },
             transformPastedHTML: (html) => sanitizeHtml(html, latestOptionsRef.current.htmlPolicy),
+            handleDOMEvents: {
+                paste: createMarkdownPasteHandler(getLatestFormatOptions, getMarkdownPasteEnabled),
+            },
         },
         onCreate: ({ editor: currentEditor }) => {
             const nextMeta = {

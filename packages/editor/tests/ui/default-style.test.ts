@@ -20,10 +20,10 @@ describe('default editor styles', () => {
     });
 
     it('styles prose content through a shared content scope', () => {
-        expect(contentStyles).toContain('.nlx-editor-prose :where(blockquote)');
-        expect(contentStyles).toContain('.nlx-editor-prose :where(code:not(pre code))');
-        expect(contentStyles).toContain('.nlx-editor-prose :where(table)');
-        expect(contentStyles).toContain(".nlx-editor-prose :where(ul[data-type='taskList'])");
+        expect(contentStyles).toContain('.nlx-editor-prose blockquote');
+        expect(contentStyles).toContain('.nlx-editor-prose code:not(pre code)');
+        expect(contentStyles).toContain('.nlx-editor-prose table');
+        expect(contentStyles).toContain(".nlx-editor-prose ul[data-type='taskList']");
     });
 
     it('keeps toolbar controls on a shared visual language', () => {

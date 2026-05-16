@@ -53,6 +53,7 @@ export interface UseEditorControllerOptions {
     autofocus?: boolean;
     placeholder?: EditorPlaceholderOptions;
     contentClassName?: string;
+    markdownPaste?: boolean;
     locale?: EditorLocale;
     extensions?: Extensions;
     editorOptions?: CreateEditorExtensionsOptions;

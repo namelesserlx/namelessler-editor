@@ -74,6 +74,32 @@ Markdown support uses `@tiptap/markdown` with GFM enabled. The v1 baseline cover
 
 Raw HTML inside Markdown is stripped before parsing.
 
+## Markdown Paste
+
+The React editor enables Markdown paste parsing by default:
+
+```tsx
+const editor = useEditorController({
+  markdownPaste: true,
+});
+```
+
+The paste path is intentionally narrow for performance:
+
+- explicit `text/markdown` and `text/x-markdown` clipboard data is parsed as Markdown
+- plain text is parsed as Markdown only when no HTML is present and the text sample looks like Markdown
+- ordinary long plain text is left to ProseMirror's default paste pipeline
+- long Markdown paste does not force `scrollIntoView`, so the viewport does not jump to the inserted end
+- `Shift + paste` and code-block paste keep plain text behavior
+
+Disable this behavior when a product wants Markdown-looking plain text to remain literal:
+
+```tsx
+const editor = useEditorController({
+  markdownPaste: false,
+});
+```
+
 ## Custom Markdown Syntax
 
 Custom nodes and marks must provide Markdown behavior on the Tiptap extension:

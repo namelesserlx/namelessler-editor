@@ -135,6 +135,23 @@ const html = exportEditorContent(json, {
 - `stats.durationMs`：转换耗时
 - `stats.lossy`：是否在转换过程中丢失结构
 
+### Markdown 粘贴
+
+React 编辑器默认会解析剪贴板里的 Markdown。它会处理明确的 `text/markdown` /
+`text/x-markdown` 剪贴板数据；如果剪贴板没有提供 HTML，也会识别看起来像 Markdown 的
+`text/plain`。
+
+普通长文本会交给 ProseMirror 默认粘贴流程，避免在包内额外解析造成输入卡顿。较长的
+Markdown 粘贴也不会强制把视口滚到粘贴内容末尾。
+
+如果你的产品希望所有纯文本粘贴都保持字面量，可以关闭 Markdown 粘贴解析：
+
+```tsx
+const controller = useEditorController({
+  markdownPaste: false,
+});
+```
+
 ---
 
 ## 🧩 自定义扩展
@@ -183,6 +200,7 @@ export function App() {
 | `autofocus`           | `boolean`                        | `false`                 | 挂载后自动聚焦               |
 | `placeholder`         | `string`                         | `undefined`             | 空内容占位文案               |
 | `contentClassName`    | `string`                         | `undefined`             | 内容区域附加类名             |
+| `markdownPaste`       | `boolean`                        | `true`                  | 是否解析 Markdown 粘贴内容   |
 | `locale`              | `'en-US' \| 'zh-CN'`             | `'en-US'`               | 内置 UI 语言                 |
 | `extensions`          | `Extensions`                     | `[]`                    | 业务自定义 Tiptap extensions |
 | `editorOptions`       | `CreateEditorExtensionsOptions`  | `{}`                    | 配置内置 extension 工厂      |

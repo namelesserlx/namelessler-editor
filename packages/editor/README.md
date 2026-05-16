@@ -135,6 +135,24 @@ Format helpers return:
 - `stats.durationMs`: measured conversion time
 - `stats.lossy`: whether structure was dropped during conversion
 
+### Markdown Paste
+
+The React editor parses Markdown from the clipboard by default. It handles explicit
+`text/markdown` / `text/x-markdown` clipboard data, and plain text that looks like Markdown when
+the clipboard does not provide HTML.
+
+Plain long-form text is left to ProseMirror's default paste pipeline for better input latency.
+Long Markdown pastes are inserted without forcing the viewport to jump to the end of the pasted
+content.
+
+Disable Markdown paste parsing when a product wants all plain text paste operations to stay literal:
+
+```tsx
+const controller = useEditorController({
+  markdownPaste: false,
+});
+```
+
 ---
 
 ## 🧩 Custom Extensions
@@ -183,6 +201,7 @@ Use the same `extensions` and `editorOptions` for `ReadonlyRenderer`, `importEdi
 | `autofocus`           | `boolean`                        | `false`                 | Focus the editor on mount                |
 | `placeholder`         | `string`                         | `undefined`             | Placeholder text for empty content       |
 | `contentClassName`    | `string`                         | `undefined`             | Extra class for the content area         |
+| `markdownPaste`       | `boolean`                        | `true`                  | Parse Markdown-shaped clipboard text     |
 | `locale`              | `'en-US' \| 'zh-CN'`             | `'en-US'`               | Built-in UI locale                       |
 | `extensions`          | `Extensions`                     | `[]`                    | App-owned Tiptap extensions              |
 | `editorOptions`       | `CreateEditorExtensionsOptions`  | `{}`                    | Configure built-in extension factory     |
