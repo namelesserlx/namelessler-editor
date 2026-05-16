@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, KeyRound, Loader2, Settings2 } from 'lucide-react';
 import {
     AI_PROVIDER_OPTIONS,
@@ -31,19 +32,20 @@ interface AiSettingsDialogProps {
     onNotify?: (message: Omit<ToastMessage, 'id'>) => void;
 }
 
-function getConnectionErrorDescription(error: unknown) {
+function getConnectionErrorDescription(error: unknown, t: ReturnType<typeof useTranslation>['t']) {
     if (error instanceof Error) {
         if (error.message === 'Failed to fetch') {
-            return 'Request failed. Check the key, model, network, or browser CORS support.';
+            return t('aiSettings.failedFetch');
         }
 
         return error.message;
     }
 
-    return 'Please check the API key, model, and network connection.';
+    return t('aiSettings.genericConnectionError');
 }
 
 export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSettingsDialogProps) {
+    const { t } = useTranslation();
     const [settings, setSettings] = useState<AiSettings>(() => {
         return loadAiSettings() ?? createSettingsForProvider('google');
     });
@@ -102,8 +104,8 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
 
         if (!nextSettings.apiKey || !nextSettings.model) {
             onNotify?.({
-                title: 'AI connection not ready',
-                description: 'Enter an API key and model before testing.',
+                title: t('aiSettings.connectionNotReady'),
+                description: t('aiSettings.connectionNotReadyDescription'),
                 variant: 'error',
             });
             return;
@@ -128,7 +130,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
             }
 
             onNotify?.({
-                title: 'AI connection verified',
+                title: t('aiSettings.connectionVerified'),
                 description: `${currentProvider?.label ?? nextSettings.provider} · ${nextSettings.model}`,
             });
         } catch (error) {
@@ -137,8 +139,8 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
             }
 
             onNotify?.({
-                title: 'AI connection failed',
-                description: getConnectionErrorDescription(error),
+                title: t('aiSettings.connectionFailed'),
+                description: getConnectionErrorDescription(error, t),
                 variant: 'error',
             });
         } finally {
@@ -157,16 +159,14 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                         <span className="inline-flex size-7 items-center justify-center rounded-lg border bg-background shadow-xs">
                             <Settings2 className="h-4 w-4" />
                         </span>
-                        AI Provider
+                        {t('aiSettings.title')}
                     </DialogTitle>
-                    <DialogDescription>
-                        Bring your own Google or DeepSeek key for this playground session.
-                    </DialogDescription>
+                    <DialogDescription>{t('aiSettings.description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-5 px-5 py-5">
                     <div className="grid gap-2">
-                        <Label>Provider</Label>
+                        <Label>{t('aiSettings.provider')}</Label>
                         <div className="grid grid-cols-2 gap-2">
                             {AI_PROVIDER_OPTIONS.map((provider) => {
                                 const active = settings.provider === provider.id;
@@ -192,7 +192,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="ai-model">Model</Label>
+                        <Label htmlFor="ai-model">{t('aiSettings.model')}</Label>
                         <Input
                             id="ai-model"
                             value={settings.model}
@@ -226,7 +226,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
 
                     <div className="grid gap-2">
                         <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor="ai-api-key">API Key</Label>
+                            <Label htmlFor="ai-api-key">{t('aiSettings.apiKey')}</Label>
                             <Button
                                 type="button"
                                 size="sm"
@@ -238,7 +238,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                                 {isTestingConnection ? (
                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : null}
-                                Test connection
+                                {t('aiSettings.testConnection')}
                             </Button>
                         </div>
                         <div className="relative">
@@ -248,7 +248,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                                 className="pl-9"
                                 type="password"
                                 value={settings.apiKey}
-                                placeholder="Paste your API key"
+                                placeholder={t('aiSettings.apiKeyPlaceholder')}
                                 onChange={(event) =>
                                     setSettings((current) => ({
                                         ...current,
@@ -260,8 +260,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                     </div>
 
                     <p className="rounded-lg border bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                        This demo ships with no default AI key. Your key stays in this browser tab
-                        session and is used only for requests you start here.
+                        {t('aiSettings.sessionNotice')}
                     </p>
                 </div>
 
@@ -273,7 +272,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                         className="px-2 text-muted-foreground hover:text-foreground"
                         onClick={clear}
                     >
-                        Clear configuration
+                        {t('aiSettings.clearConfiguration')}
                     </Button>
                     <div className="flex items-center gap-2">
                         <Button
@@ -283,7 +282,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                             className="min-w-20"
                             onClick={() => onOpenChange(false)}
                         >
-                            Cancel
+                            {t('aiSettings.cancel')}
                         </Button>
                         <Button
                             type="button"
@@ -292,7 +291,7 @@ export function AiSettingsDialog({ open, onOpenChange, onSaved, onNotify }: AiSe
                             disabled={!canSave}
                             onClick={save}
                         >
-                            Save
+                            {t('aiSettings.save')}
                         </Button>
                     </div>
                 </DialogFooter>

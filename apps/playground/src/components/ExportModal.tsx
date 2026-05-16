@@ -1,5 +1,6 @@
 import { Code, FileJson, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { exportMarkdown } from '@namelesserlx/editor/format';
 import { CodeBlockPro } from '@tiptap-codeless/extension-code-block-pro';
@@ -14,6 +15,7 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ isOpen, onClose, editor }: ExportModalProps) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'markdown' | 'json' | 'html'>('markdown');
     const [content, setContent] = useState('');
 
@@ -36,10 +38,8 @@ export function ExportModal({ isOpen, onClose, editor }: ExportModalProps) {
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="w-[90vw] max-w-5xl sm:max-w-5xl md:max-w-6xl flex flex-col h-[85vh] p-0 gap-0 border-slate-200">
                 <VisuallyHidden>
-                    <DialogTitle>View Source Code</DialogTitle>
-                    <DialogDescription>
-                        View document content as markdown, json, or html
-                    </DialogDescription>
+                    <DialogTitle>{t('export.title')}</DialogTitle>
+                    <DialogDescription>{t('export.description')}</DialogDescription>
                 </VisuallyHidden>
 
                 <Tabs
@@ -80,7 +80,7 @@ export function ExportModal({ isOpen, onClose, editor }: ExportModalProps) {
                             className="h-full m-0 data-[state=active]:flex flex-col outline-none"
                         >
                             <pre className="text-[13px] text-slate-700 font-mono whitespace-pre-wrap word-break">
-                                {content || 'Empty content'}
+                                {content || t('export.empty')}
                             </pre>
                         </TabsContent>
                     </div>

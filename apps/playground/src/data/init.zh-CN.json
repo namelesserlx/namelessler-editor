@@ -1,0 +1,317 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "namelessler 编辑器示例"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "这个示例展示了 "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "@namelesserlx/editor"
+        },
+        {
+          "type": "text",
+          "text": " 与自定义扩展的组合能力："
+        }
+      ]
+    },
+    {
+      "type": "bulletList",
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "CodeBlock Pro"
+                },
+                {
+                  "type": "text",
+                  "text": " — 支持语法高亮、Mermaid 图表、全屏、折叠、行号和语言切换的代码块"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "Drag Handle"
+                },
+                {
+                  "type": "text",
+                  "text": " — 块级拖拽手柄，以及通过斜杠菜单 (/) 触发的插入体验"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "File Upload"
+                },
+                {
+                  "type": "text",
+                  "text": " — 支持拖拽或粘贴文件到编辑器"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "AI Copilot"
+                },
+                {
+                  "type": "text",
+                  "text": " — 支持 Tab 自动补全和基于选区的 AI 操作"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "试着输入 "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "code"
+            }
+          ],
+          "text": "/"
+        },
+        {
+          "type": "text",
+          "text": " 触发斜杠菜单，或使用左侧手柄拖拽内容块。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "JavaScript 示例"
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "javascript",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "function fibonacci(n) {\n  const fib = [0, 1];\n  for (let i = 2; i <= n; i++) {\n    fib[i] = fib[i - 1] + fib[i - 2];\n  }\n  return fib.slice(0, n + 1);\n}\n\nconsole.log(fibonacci(10));\n// → [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55]"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Python 示例"
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "python",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "def merge_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    mid = len(arr) // 2\n    left = merge_sort(arr[:mid])\n    right = merge_sort(arr[mid:])\n    return merge(left, right)\n\ndef merge(left, right):\n    result = []\n    i = j = 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            result.append(left[i])\n            i += 1\n        else:\n            result.append(right[j])\n            j += 1\n    return result + left[i:] + right[j:]"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": {
+        "textAlign": null,
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Mermaid 图表示例"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "下面的代码块会使用 Mermaid 渲染流程图（如果 CodeBlock Pro 支持）："
+        }
+      ]
+    },
+    {
+      "type": "codeBlockPro",
+      "attrs": {
+        "language": "mermaid",
+        "collapsed": false,
+        "showLineNumbers": false,
+        "showMermaidDiagram": false,
+        "theme": "auto"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "graph TD\n    A[开始] --> B{是否正常工作?}\n    B -->|是| C[很好]\n    B -->|否| D[调试]\n    D --> B\n    C --> E[部署]\n    E --> F[监控]\n    F --> G{一切正常?}\n    G -->|是| H[完成]\n    G -->|否| D"
+        }
+      ]
+    },
+    {
+      "type": "horizontalRule"
+    },
+    {
+      "type": "paragraph",
+      "attrs": {
+        "textAlign": null
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "在气泡菜单中使用 "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "AI 助手"
+        },
+        {
+          "type": "text",
+          "text": " 按钮，可以对选中文本进行润色、重写或翻译。打开 "
+        },
+        {
+          "type": "text",
+          "marks": [
+            {
+              "type": "bold"
+            }
+          ],
+          "text": "问答"
+        },
+        {
+          "type": "text",
+          "text": " 侧边栏，可以围绕当前文档提问。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Editor as TiptapEditor } from '@tiptap/react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useEditorController } from '@namelesserlx/editor/react/controller';
 import { Editor as EditorComponent } from '@namelesserlx/editor/react/editor';
 import { BubbleMenuSelect } from '@namelesserlx/editor/ui';
@@ -38,7 +39,9 @@ import {
     hasAiSettings,
 } from '../services/aiService';
 import type { ToastMessage } from './ToastStack';
-import initContent from '../data/init.json';
+import englishInitContent from '../data/init.en-US.json';
+import chineseInitContent from '../data/init.zh-CN.json';
+import type { EditorLocale } from '../i18n';
 
 type AIAction = 'polish' | 'rewrite' | 'expand' | 'shorten' | 'translate';
 
@@ -53,11 +56,17 @@ const AI_PROMPTS: Record<AIAction, string> = {
         'You are a professional translator. Translate the following text to Chinese (if it is not Chinese) or to English (if it is Chinese). Output only the translated text, nothing else.',
 };
 
+const localizedInitContent: Record<EditorLocale, JSONContent> = {
+    'en-US': englishInitContent,
+    'zh-CN': chineseInitContent,
+};
+
 interface EditorProps {
     content?: JSONContent;
     onChange?: (html: string, text: string) => void;
     onTextUpdate?: (text: string) => void;
     editorRef?: React.MutableRefObject<TiptapEditor | null>;
+    locale: EditorLocale;
     onOpenAiSettings?: () => void;
     onNotify?: (message: Omit<ToastMessage, 'id'>) => void;
 }
@@ -78,9 +87,11 @@ export function Editor({
     onChange,
     onTextUpdate,
     editorRef,
+    locale,
     onOpenAiSettings,
     onNotify,
 }: EditorProps) {
+    const { t } = useTranslation();
     const [editorInstance, setEditorInstance] = useState<TiptapEditor | null>(null);
     const onTextUpdateRef = useRef(onTextUpdate);
     onTextUpdateRef.current = onTextUpdate;
@@ -92,6 +103,7 @@ export function Editor({
     const [previewError, setPreviewError] = useState<string | null>(null);
     const [showPreview, setShowPreview] = useState(false);
     const [savedSelection, setSavedSelection] = useState<{ from: number; to: number } | null>(null);
+    const previousLocaleRef = useRef(locale);
 
     const syncEditorContent = useCallback((editor: TiptapEditor) => {
         const text = editor.getText();
@@ -99,17 +111,13 @@ export function Editor({
         onChangeRef.current?.(editor.getHTML(), text);
     }, []);
 
-    const controller = useEditorController({
-        defaultContent: content || initContent,
-        contentFormat: 'json',
-        placeholder: "Press '/' for commands or start typing...",
-        editorOptions: {
-            features: { codeBlock: false },
-        },
-        extensions: [
+    const placeholder = t('editor.placeholder');
+    const codeBlockLocale = locale === 'zh-CN' ? 'zh' : 'en';
+    const extraExtensions = useMemo(
+        () => [
             CodeBlockPro.configure({
                 lowlight,
-                locale: 'en',
+                locale: codeBlockLocale,
                 defaultLanguage: 'javascript',
                 theme: 'auto',
             }),
@@ -118,7 +126,7 @@ export function Editor({
                 storageMode: 'memory',
             }),
             Placeholder.configure({
-                placeholder: "Press '/' for commands or start typing...",
+                placeholder,
                 emptyEditorClass: 'is-editor-empty',
             }),
             Autocompletion.configure({
@@ -139,6 +147,23 @@ export function Editor({
                 },
             }),
         ],
+        [codeBlockLocale, placeholder],
+    );
+    const editorOptions = useMemo(
+        () => ({
+            features: { codeBlock: false },
+        }),
+        [],
+    );
+    const defaultContent = content ?? localizedInitContent[locale];
+
+    const controller = useEditorController({
+        defaultContent,
+        contentFormat: 'json',
+        locale,
+        placeholder,
+        editorOptions,
+        extensions: extraExtensions,
         onReady: (editor) => {
             setEditorInstance(editor);
             if (editorRef) {
@@ -155,6 +180,20 @@ export function Editor({
             activeRequestRef.current?.abort();
         };
     }, []);
+
+    useEffect(() => {
+        if (!editor || editor.isDestroyed || content || controller.isDirty) {
+            return;
+        }
+
+        if (previousLocaleRef.current === locale) {
+            return;
+        }
+
+        previousLocaleRef.current = locale;
+        editor.commands.setContent(defaultContent, { emitUpdate: false });
+        syncEditorContent(editor);
+    }, [content, controller.isDirty, defaultContent, editor, locale, syncEditorContent]);
 
     // Forward text updates to parent
     useEffect(() => {
@@ -174,8 +213,8 @@ export function Editor({
 
             if (!hasAiSettings()) {
                 onNotify?.({
-                    title: 'AI interface is not configured',
-                    description: 'Choose Google or DeepSeek and add your own API key.',
+                    title: t('editor.aiNotConfigured'),
+                    description: t('editor.aiNotConfiguredDescription'),
                     variant: 'error',
                 });
                 onOpenAiSettings?.();
@@ -217,19 +256,19 @@ export function Editor({
 
                 const message =
                     error instanceof AiConfigurationError
-                        ? 'AI interface is not configured'
+                        ? t('editor.aiNotConfigured')
                         : error instanceof Error && error.message
                           ? error.message
-                          : 'AI request failed';
+                          : t('editor.aiRequestFailed');
 
                 console.error(error);
                 setPreviewError(message);
                 onNotify?.({
                     title: message,
                     description:
-                        message === 'AI interface is not configured'
-                            ? 'Open AI Settings and add your own API key.'
-                            : 'Please check the provider, model, and API key.',
+                        message === t('editor.aiNotConfigured')
+                            ? t('editor.openAiSettingsDescription')
+                            : t('editor.checkProviderDescription'),
                     variant: 'error',
                 });
             } finally {
@@ -239,7 +278,7 @@ export function Editor({
                 }
             }
         },
-        [editor, onNotify, onOpenAiSettings],
+        [editor, onNotify, onOpenAiSettings, t],
     );
 
     const applyChanges = () => {
@@ -294,20 +333,19 @@ export function Editor({
                 }}
             />
 
-            {/* AI Preview Modal */}
             {showPreview && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
                     <div className="bg-white shadow-2xl border border-slate-200 rounded-xl overflow-hidden w-[400px] max-h-[60vh] flex flex-col">
                         <div className="p-3 border-b border-slate-100 font-medium flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center text-sm text-slate-700">
                                 <Sparkles className="w-4 h-4 mr-1.5" />
-                                AI Preview
+                                {t('editor.aiPreview')}
                                 {isLoading && <Loader2 className="w-3 h-3 ml-2 animate-spin" />}
                             </div>
                             <button
                                 type="button"
                                 className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                aria-label="Close AI preview"
+                                aria-label={t('editor.closeAiPreview')}
                                 onClick={closePreview}
                             >
                                 <X className="h-4 w-4" />
@@ -319,7 +357,7 @@ export function Editor({
                                     {previewError}
                                 </div>
                             ) : (
-                                streamingText || (isLoading ? 'Thinking...' : '')
+                                streamingText || (isLoading ? t('editor.thinking') : '')
                             )}
                         </div>
                         {(!isLoading || previewError) && (streamingText || previewError) ? (
@@ -329,14 +367,15 @@ export function Editor({
                                     className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors flex items-center"
                                 >
                                     <X className="w-3 h-3 mr-1" />
-                                    {previewError ? 'Close' : 'Discard'}
+                                    {previewError ? t('editor.close') : t('editor.discard')}
                                 </button>
                                 {!previewError ? (
                                     <button
                                         onClick={applyChanges}
                                         className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white flex items-center shadow-sm transition-colors"
                                     >
-                                        <Check className="w-3 h-3 mr-1" /> Replace Selection
+                                        <Check className="w-3 h-3 mr-1" />{' '}
+                                        {t('editor.replaceSelection')}
                                     </button>
                                 ) : null}
                             </div>
@@ -349,11 +388,15 @@ export function Editor({
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md rounded-full border border-slate-200/60 shadow-sm text-xs font-medium text-slate-500">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                     <span>
-                        Press{' '}
-                        <kbd className="px-1.5 py-0.5 text-slate-600 bg-slate-100 rounded border border-slate-200 mx-0.5 font-sans font-semibold">
-                            Tab
-                        </kbd>{' '}
-                        to autocomplete
+                        <Trans
+                            i18nKey="editor.autocompleteHint"
+                            values={{ key: 'Tab' }}
+                            components={{
+                                keycap: (
+                                    <kbd className="px-1.5 py-0.5 text-slate-600 bg-slate-100 rounded border border-slate-200 mx-0.5 font-sans font-semibold"></kbd>
+                                ),
+                            }}
+                        />
                     </span>
                 </div>
             </div>
@@ -370,34 +413,35 @@ function AiAssistDropdown({
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation();
     const aiOptions = [
         {
             key: 'polish',
-            label: '润色 (Polish)',
+            label: t('editor.actions.polish'),
             icon: <WandSparkles size={14} />,
             action: 'polish' as const,
         },
         {
             key: 'rewrite',
-            label: '重写 (Rewrite)',
+            label: t('editor.actions.rewrite'),
             icon: <PenLine size={14} />,
             action: 'rewrite' as const,
         },
         {
             key: 'expand',
-            label: '扩写 (Expand)',
+            label: t('editor.actions.expand'),
             icon: <Expand size={14} />,
             action: 'expand' as const,
         },
         {
             key: 'shorten',
-            label: '缩写 (Shorten)',
+            label: t('editor.actions.shorten'),
             icon: <Shrink size={14} />,
             action: 'shorten' as const,
         },
         {
             key: 'translate',
-            label: '翻译 (Translate)',
+            label: t('editor.actions.translate'),
             icon: <Languages size={14} />,
             action: 'translate' as const,
         },
@@ -405,7 +449,7 @@ function AiAssistDropdown({
 
     return (
         <BubbleMenuSelect
-            ariaLabel="AI Assist"
+            ariaLabel={t('editor.aiAssist')}
             open={isOpen}
             onOpenChange={onOpenChange}
             options={aiOptions.map((opt) => ({
@@ -416,7 +460,7 @@ function AiAssistDropdown({
             }))}
         >
             <Sparkles size={14} />
-            <span style={{ marginLeft: 4 }}>AI Assist</span>
+            <span style={{ marginLeft: 4 }}>{t('editor.aiAssist')}</span>
         </BubbleMenuSelect>
     );
 }

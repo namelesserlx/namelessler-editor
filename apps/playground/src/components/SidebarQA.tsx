@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { AiConfigurationError, generateContentStream, hasAiSettings } from '../services/aiService';
 import { cn } from '../lib/utils';
@@ -174,11 +175,12 @@ export function SidebarQA({
     onOpenAiSettings,
     onNotify,
 }: SidebarQAProps) {
+    const { t } = useTranslation();
     const [messages, setMessages] = useState<Message[]>([
         {
             id: 'initial',
             role: 'assistant',
-            content: '你好！我是 AI 助手。你可以就这篇文档向我提问，或者让我总结全文。',
+            content: t('qa.initialMessage'),
         },
     ]);
     const [input, setInput] = useState('');
@@ -191,6 +193,16 @@ export function SidebarQA({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    useEffect(() => {
+        setMessages((current) => {
+            if (current.length !== 1 || current[0]?.id !== 'initial') {
+                return current;
+            }
+
+            return [{ ...current[0], content: t('qa.initialMessage') }];
+        });
+    }, [t]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -230,8 +242,8 @@ export function SidebarQA({
 
         if (!hasAiSettings()) {
             onNotify?.({
-                title: 'AI interface is not configured',
-                description: 'Choose Google or DeepSeek and add your own API key.',
+                title: t('editor.aiNotConfigured'),
+                description: t('editor.aiNotConfiguredDescription'),
                 variant: 'error',
             });
             onOpenAiSettings?.();
@@ -246,12 +258,12 @@ export function SidebarQA({
                 {
                     id: createMessageId('assistant'),
                     role: 'assistant',
-                    content: '文档内容为空，无法进行总结。请先输入有效的文档内容。',
+                    content: t('qa.emptyDocument'),
                 },
             ]);
             onNotify?.({
-                title: 'Document content is empty',
-                description: 'Add document content before using AI Q&A or summary.',
+                title: t('qa.emptyDocumentTitle'),
+                description: t('qa.emptyDocumentDescription'),
                 variant: 'error',
             });
             return;
@@ -273,8 +285,7 @@ export function SidebarQA({
         try {
             const prompt = `Here is the document context:\n\n---\n${context}\n---\n\nUser Question: ${userMsg}`;
             const stream = await generateContentStream(prompt, {
-                systemInstruction:
-                    "You are a helpful AI assistant. Answer the user's question strictly based on the provided document context. If the answer is not in the document, politely say so. Answer in the same language as the user's question. Do not rewrite, restate, or replace the user's question. Prefer concise paragraphs and short lists.",
+                systemInstruction: t('qa.systemInstruction'),
                 usePro: true,
                 signal: request.signal,
             });
@@ -295,21 +306,19 @@ export function SidebarQA({
 
             const message =
                 error instanceof AiConfigurationError
-                    ? 'AI interface is not configured'
+                    ? t('editor.aiNotConfigured')
                     : error instanceof Error && error.message
                       ? error.message
-                      : 'AI request failed';
+                      : t('editor.aiRequestFailed');
             console.error(error);
             onNotify?.({
                 title: message,
-                description: 'Please check the provider, model, and API key.',
+                description: t('editor.checkProviderDescription'),
                 variant: 'error',
             });
             setMessages((prev) =>
                 prev.map((msg) =>
-                    msg.id === assistantMsgId
-                        ? { ...msg, content: 'Sorry, I encountered an error answering that.' }
-                        : msg,
+                    msg.id === assistantMsgId ? { ...msg, content: t('qa.answerFailed') } : msg,
                 ),
             );
         } finally {
@@ -320,7 +329,7 @@ export function SidebarQA({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const userMsg = input.trim();
         if (!userMsg || isLoading) return;
@@ -330,7 +339,7 @@ export function SidebarQA({
     };
 
     const handleSummarize = () => {
-        void askQuestion('请一句话总结这篇文档的内容。');
+        void askQuestion(t('qa.summarizePrompt'));
     };
 
     return (
@@ -346,7 +355,7 @@ export function SidebarQA({
                 <div
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label="Resize Document Q&A panel"
+                    aria-label={t('qa.resizeLabel')}
                     className={cn(
                         'absolute left-0 top-0 z-10 h-full w-2 -translate-x-1 cursor-col-resize touch-none',
                         isResizing ? 'bg-slate-900/10' : 'hover:bg-slate-900/5',
@@ -359,7 +368,7 @@ export function SidebarQA({
                 <SheetHeader className="p-4 border-b border-slate-200 flex flex-row items-center justify-between bg-slate-50/50 space-y-0 text-left">
                     <SheetTitle className="font-semibold text-slate-800 flex items-center tracking-tight text-sm">
                         <Bot className="w-4 h-4 mr-2 text-slate-700" />
-                        Document Q&A
+                        {t('qa.title')}
                     </SheetTitle>
                 </SheetHeader>
 
@@ -414,7 +423,7 @@ export function SidebarQA({
                         disabled={isLoading}
                         className="text-xs font-medium text-slate-700 hover:text-slate-900 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 px-4 py-2 rounded-full transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Sparkles className="w-3.5 h-3.5 mr-1.5" /> 一键总结全文 (Summarize)
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5" /> {t('qa.summarize')}
                     </button>
                 </div>
 
@@ -424,12 +433,13 @@ export function SidebarQA({
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask a question..."
+                            placeholder={t('qa.placeholder')}
                             className="flex-1 bg-white border border-slate-300 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-800 outline-none transition-all shadow-sm"
                         />
                         <button
                             type="submit"
                             disabled={!input.trim() || isLoading}
+                            aria-label={t('qa.submit')}
                             className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-900 text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Send className="h-4 w-4" />

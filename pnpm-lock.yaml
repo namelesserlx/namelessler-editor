@@ -89,6 +89,9 @@ importers:
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      i18next:
+        specifier: ^26.2.0
+        version: 26.2.0(typescript@6.0.3)
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -104,6 +107,9 @@ importers:
       react-dom:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
+      react-i18next:
+        specifier: ^17.0.8
+        version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
@@ -2157,10 +2163,21 @@ packages:
     resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
+  html-parse-stringify@3.0.1:
+    resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
+
   husky@9.1.7:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
     engines: {node: '>=18'}
     hasBin: true
+
+  i18next@26.2.0:
+    resolution: {integrity: sha512-zwBHldHdTmwN7r6UNc7lC6GWNN+YYg3DrRSeHR5PRRBf5QnJZcYHrQc0uaU26qZeYxR7iFZD+Y315dPnKP47wA==}
+    peerDependencies:
+      typescript: ^5 || ^6
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   iconv-lite@0.6.0:
     resolution: {integrity: sha512-43ZpGYZ9QtuutX5l6WC1DSO8ane9N+Ct5qPLF2OV7vM9abM69gnAbVkh66ibaZd3aOGkoP1ZmringlKhLBkw2Q==}
@@ -2619,6 +2636,22 @@ packages:
     peerDependencies:
       react: ^19.2.6
 
+  react-i18next@17.0.8:
+    resolution: {integrity: sha512-0ooKbGLU8JXhe1zwpQUWIeXSgLPOfwJmgheWRIUpcoA0CpyabpGhayjdG+/eA5esC1AQ8h2jWpXjJfzQzeDOCw==}
+    peerDependencies:
+      i18next: '>= 26.2.0'
+      react: '>= 16.8.0'
+      react-dom: '*'
+      react-native: '*'
+      typescript: ^5 || ^6
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+      typescript:
+        optional: true
+
   react@19.2.6:
     resolution: {integrity: sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q==}
     engines: {node: '>=0.10.0'}
@@ -2972,6 +3005,10 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  void-elements@3.1.0:
+    resolution: {integrity: sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w==}
+    engines: {node: '>=0.10.0'}
 
   vscode-jsonrpc@8.2.0:
     resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
@@ -5054,7 +5091,15 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
 
+  html-parse-stringify@3.0.1:
+    dependencies:
+      void-elements: 3.1.0
+
   husky@9.1.7: {}
+
+  i18next@26.2.0(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
 
   iconv-lite@0.6.0:
     dependencies:
@@ -5508,6 +5553,17 @@ snapshots:
       react: 19.2.6
       scheduler: 0.27.0
 
+  react-i18next@17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3):
+    dependencies:
+      '@babel/runtime': 7.29.2
+      html-parse-stringify: 3.0.1
+      i18next: 26.2.0(typescript@6.0.3)
+      react: 19.2.6
+      use-sync-external-store: 1.6.0(react@19.2.6)
+    optionalDependencies:
+      react-dom: 19.2.6(react@19.2.6)
+      typescript: 6.0.3
+
   react@19.2.6: {}
 
   require-directory@2.1.1: {}
@@ -5794,6 +5850,8 @@ snapshots:
       jsdom: 29.1.1
     transitivePeerDependencies:
       - msw
+
+  void-elements@3.1.0: {}
 
   vscode-jsonrpc@8.2.0: {}
 

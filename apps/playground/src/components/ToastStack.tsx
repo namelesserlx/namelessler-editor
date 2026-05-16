@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
 export interface ToastMessage {
@@ -14,6 +15,8 @@ interface ToastStackProps {
 }
 
 export function ToastStack({ messages, onDismiss }: ToastStackProps) {
+    const { t } = useTranslation();
+
     if (messages.length === 0) {
         return null;
     }
@@ -42,7 +45,7 @@ export function ToastStack({ messages, onDismiss }: ToastStackProps) {
                         <button
                             type="button"
                             className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label="Dismiss notification"
+                            aria-label={t('toast.dismiss')}
                             onClick={() => onDismiss(message.id)}
                         >
                             <X className="h-3.5 w-3.5" />
