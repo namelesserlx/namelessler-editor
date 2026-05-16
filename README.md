@@ -1,13 +1,21 @@
 # @namelesserlx/editor
 
-React Rich Text Editor for Tiptap.
+React Tiptap Rich Text Editor SDK.
 
-A batteries-included, JSON-first editor SDK for React with built-in UI, readonly rendering, and HTML / Markdown import-export.
+A batteries-included, JSON-first rich text editor SDK for React and Tiptap 3 with built-in UI, readonly rendering, and HTML / Markdown import-export.
 
+[![npm version](https://img.shields.io/npm/v/@namelesserlx/editor?color=cb3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/@namelesserlx/editor)
+[![npm downloads](https://img.shields.io/npm/dm/@namelesserlx/editor?color=2f855a&logo=npm&logoColor=white)](https://www.npmjs.com/package/@namelesserlx/editor)
 [![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev/)
 [![Tiptap 3](https://img.shields.io/badge/Tiptap-3-000000)](https://tiptap.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![JSON-first](https://img.shields.io/badge/Content-JSON--first-2563eb)](#-features)
+[![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](./packages/editor/LICENSE)
+
+[Live Playground](https://namelesserlx.github.io/namelessler-editor/) ·
+[npm Package](https://www.npmjs.com/package/@namelesserlx/editor) ·
+[Package Docs](./packages/editor/README.md) ·
+[Issues](https://github.com/namelesserlx/namelessler-editor/issues)
 
 - [English](README.md) (Current)
 - [中文](README.zh-CN.md)
