@@ -1,7 +1,7 @@
 {
   "name": "namelessler-editor",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "React Rich Text Editor for Tiptap. A batteries-included, JSON-first editor SDK for React with built-in UI, readonly rendering, and HTML/Markdown import-export.",
   "keywords": [
     "tiptap",
@@ -46,16 +46,19 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:editor": "pnpm --filter @namelesserlx/editor build",
+    "changeset": "changeset",
     "dev": "pnpm --filter @namelesserlx/editor build && pnpm -r --parallel --stream --filter @namelesserlx/editor --filter @namelesserlx/editor-playground run dev",
     "dev:editor": "pnpm --filter @namelesserlx/editor dev",
     "dev:playground": "pnpm --filter @namelesserlx/editor build && pnpm --filter @namelesserlx/editor-playground dev",
     "preview:playground": "pnpm --filter @namelesserlx/editor-playground preview",
+    "release": "pnpm build:editor && changeset publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm --filter @namelesserlx/editor test",
+    "version-packages": "changeset version",
     "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
     "prepare": "husky",
     "clean": "rm -rf node_modules apps/playground/dist packages/editor/dist"
@@ -68,6 +71,7 @@
     "*.{css,html,json,md,yml,yaml}": "prettier --write"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@commitlint/cli": "^21.0.0",
     "@commitlint/config-conventional": "^21.0.0",
     "@eslint/js": "^10.0.1",

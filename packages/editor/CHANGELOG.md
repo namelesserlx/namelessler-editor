@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 1.0.0
 
 - Rebuilt the package as `@namelesserlx/editor`.
 - Added JSON-first editor and readonly renderer APIs.

@@ -5,6 +5,10 @@ React Rich Text Editor for Tiptap with built-in UI, readonly rendering, JSON-fir
 - [English](README.md) (Current)
 - [中文](https://github.com/namelesserlx/namelessler-editor/blob/main/packages/editor/README.zh-CN.md)
 
+[Live Playground](https://namelesserlx.github.io/namelessler-editor/) ·
+[Source Repository](https://github.com/namelesserlx/namelessler-editor) ·
+[Issues](https://github.com/namelesserlx/namelessler-editor/issues)
+
 ---
 
 ## ✨ Features

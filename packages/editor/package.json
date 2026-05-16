@@ -1,6 +1,6 @@
 {
   "name": "@namelesserlx/editor",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": false,
   "description": "React Rich Text Editor for Tiptap with a batteries-included, JSON-first editor SDK, built-in UI, readonly rendering, and HTML/Markdown import-export.",
   "type": "module",
@@ -120,7 +120,7 @@
     "url": "https://github.com/namelesserlx/namelessler-editor.git",
     "directory": "packages/editor"
   },
-  "homepage": "https://github.com/namelesserlx/namelessler-editor/tree/main/packages/editor#readme",
+  "homepage": "https://namelesserlx.github.io/namelessler-editor/",
   "bugs": {
     "url": "https://github.com/namelesserlx/namelessler-editor/issues"
   },
